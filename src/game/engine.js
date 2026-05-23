@@ -43,6 +43,14 @@ export class GameEngine {
 
   initInputs() {
     window.addEventListener('keydown', (e) => {
+      // Escape key to close active dialogue even if the chat input is focused!
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        if (this.activeNPC) {
+          this.closeDialog();
+        }
+        return;
+      }
+
       // Don't steal keys or prevent default behaviors while typing in a text input or textarea
       if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
         return;

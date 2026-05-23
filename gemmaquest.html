@@ -680,6 +680,13 @@ class GameEngine {
   }
   initInputs() {
     window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" || e.key === "Esc") {
+        if (this.activeNPC) {
+          this.closeDialog();
+        }
+        return;
+      }
+      
       // Don't steal keys while typing in the chat box.
       if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) return;
       
@@ -1289,7 +1296,7 @@ ui.startGameBtn.addEventListener("click", () => {
     if (evt === "biome_discover") generateBiomeLore(data.gridX, data.gridY, data.biome);
     else if (evt === "npc_talk") initiateNPCDialogue(data);
     else if (evt === "walk") playWalk();
-    else if (evt === "dialog_close") ui.dialogPanel.classList.add("hidden");
+    else if (evt === "dialog_close") { ui.dialogPanel.classList.add("hidden"); ui.chatInput.blur(); }
   });
   engine.checkBiomeChange();
   (function tick(){ engine.update(); renderer.render(engine.camera, engine.player, engine.getNPCList()); requestAnimationFrame(tick); })();

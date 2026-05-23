@@ -497,6 +497,7 @@ ui.startGameBtn.addEventListener('click', () => {
       playWalkSound();
     } else if (event === 'dialog_close') {
       ui.dialogPanel.classList.add('hidden');
+      ui.chatInput.blur();
     }
   });
 
