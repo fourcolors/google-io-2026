@@ -32,9 +32,12 @@ self.onmessage = async (event) => {
       });
 
       // Load pipeline with progress callbacks
+      // Pinned to 'q4' (4-bit integer weights, 32-bit activations) to bypass WebGPU FP16 numeric overflow 
+      // issues on certain platforms/GPUs (ONNX Runtime issue #26732).
+      console.log(`[AI Worker] Pinning dtype to 'q4' for device: ${device}`);
       pipelineInstance = await pipeline('text-generation', modelId, {
         device: device,
-        dtype: 'q4', // Quantized for browser compatibility
+        dtype: 'q4', 
         progress_callback: (data) => {
           if (data.status === 'downloading') {
             self.postMessage({

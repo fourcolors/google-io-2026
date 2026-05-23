@@ -24,12 +24,12 @@
 
     <!-- UI Overlay container -->
     <div class="ui-container">
-      
       <!-- Top Bar: Game Stats & Model Info -->
       <header class="top-bar glass">
         <div class="game-logo">
           <span class="pixel-font text-gradient">GemmaQuest</span>
           <span class="badge">WebGPU Beta</span>
+          <span id="gpuBadge" class="badge badge-gpu hidden">LOCAL · GPU</span>
         </div>
         <div class="model-status-panel">
           <div class="status-indicator">
@@ -40,7 +40,9 @@
           <select id="modelSelect" class="model-select">
             <option value="onnx-community/gemma-4-E2B-it-ONNX" selected>Gemma 4 E2B (Frontier - 1.5GB)</option>
             <option value="onnx-community/gemma-3-270m-it-ONNX">Gemma 3 270M (Recommended - 150MB)</option>
+            <option value="cloud-gemini">Google Gemini 2.5 Flash (Cloud Fallback)</option>
           </select>
+          <input type="password" id="apiKeyInput" class="model-select hidden" placeholder="Enter Gemini API Key..." style="width: 180px;">
           <button id="loadModelBtn" class="btn btn-primary pixel-btn-small">Load AI</button>
         </div>
       </header>

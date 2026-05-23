@@ -1,9 +1,10 @@
 // ==========================================================================
-// GemmaQuest Entry Point - Orchestrating Game Loop, UI, Workers & Audio Synth
+// GemmaQuest Entry Point - Orchestrating Game Loop, UI, Engines & Audio Synth
 // ==========================================================================
 
 import { GameEngine } from './game/engine.js';
 import { GameRenderer } from './game/renderer.js';
+import { LocalWorkerEngine, ApiEngine } from './inference/engine.js';
 
 // --- Web Audio API retro 8-bit sound generator ---
 let audioCtx = null;
@@ -82,18 +83,19 @@ function playFanfareSound() {
   });
 }
 
-// --- Initialize AI Web Worker ---
-// Create worker using Vite module worker syntax
-const aiWorker = new Worker(new URL('./workers/ai.worker.js', import.meta.url), {
-  type: 'module'
-});
+// --- Initialize Unified Inference Engines ---
+const localEngine = new LocalWorkerEngine();
+const apiEngine = new ApiEngine();
+let activeEngine = localEngine;
 
 // UI State & Elements
 const ui = {
   statusDot: document.getElementById('statusDot'),
   statusText: document.getElementById('statusText'),
   modelSelect: document.getElementById('modelSelect'),
+  apiKeyInput: document.getElementById('apiKeyInput'),
   loadModelBtn: document.getElementById('loadModelBtn'),
+  gpuBadge: document.getElementById('gpuBadge'),
   loaderPanel: document.getElementById('loaderPanel'),
   progressContainer: document.getElementById('progressContainer'),
   progressBar: document.getElementById('progressBar'),
@@ -140,89 +142,90 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// --- Handle Worker Messages ---
-aiWorker.onmessage = (event) => {
-  const { type, modelId, cached, device, status, message, file, progress, token, text, error } = event.data;
-
-  switch (type) {
-    case 'status':
-      ui.statusText.innerText = `AI Status: ${message}`;
-      if (status === 'loading' || status === 'downloading') {
-        ui.statusDot.className = 'indicator-dot loading';
-      }
-      break;
-
-    case 'progress':
-      ui.progressContainer.classList.remove('hidden');
-      const roundedProgress = Math.round(progress);
-      ui.progressBar.style.width = `${roundedProgress}%`;
-      ui.progressLabel.innerText = `Downloading ${file.split('/').pop()}: ${roundedProgress}%`;
-      break;
-
-    case 'ready':
-      isAIReady = true;
-      ui.statusDot.className = 'indicator-dot active';
-      ui.statusText.innerText = `AI Ready (${device.toUpperCase()})`;
-      ui.progressContainer.classList.add('hidden');
-      ui.loadModelBtn.innerText = 'Loaded';
-      ui.loadModelBtn.disabled = true;
-      ui.modelSelect.disabled = true;
-      
-      // Allow Chat interactions
-      ui.chatInput.disabled = false;
-      ui.sendChatBtn.disabled = false;
-      
-      console.log(`Model ${modelId} ready on ${device}`);
-      break;
-
-    case 'token':
-      // Streaming Token Arrival
-      accumulatedResponseText += token;
-      
-      // Update UI bubble
-      const dialogueTextEl = document.getElementById('npcDialogueText');
-      if (dialogueTextEl) {
-        dialogueTextEl.innerText = accumulatedResponseText;
-        ui.chatHistory.scrollTop = ui.chatHistory.scrollHeight;
-        playTextBlip();
-      }
-      break;
-
-    case 'complete':
-      isGenerating = false;
-      ui.statusDot.className = 'indicator-dot active';
-      ui.statusText.innerText = 'AI Ready';
-      ui.chatInput.disabled = false;
-      ui.sendChatBtn.disabled = false;
-      ui.chatInput.focus();
-      
-      // Add model's reply to history
-      activeNPCHistory.push({ role: 'assistant', content: text });
-      break;
-
-    case 'error':
-      isGenerating = false;
-      ui.statusDot.className = 'indicator-dot idle';
-      ui.statusText.innerText = 'AI Error';
-      alert(`Model loading error: ${error}\n\nFalling back to procedural mode.`);
-      ui.progressContainer.classList.add('hidden');
-      break;
+// Dynamic UI events for Cloud key input toggling
+ui.modelSelect.addEventListener('change', () => {
+  if (ui.modelSelect.value === 'cloud-gemini') {
+    ui.apiKeyInput.classList.remove('hidden');
+    ui.apiKeyInput.value = localStorage.getItem('GEMMAQUEST_API_KEY') || '';
+  } else {
+    ui.apiKeyInput.classList.add('hidden');
   }
-};
+});
+
+// Pre-populate stored key if cloud fallback was active
+if (ui.modelSelect.value === 'cloud-gemini') {
+  ui.apiKeyInput.classList.remove('hidden');
+  ui.apiKeyInput.value = localStorage.getItem('GEMMAQUEST_API_KEY') || '';
+}
 
 // --- Load Model Request ---
 function loadAIModel() {
   const selectedModel = ui.modelSelect.value;
   ui.progressContainer.classList.remove('hidden');
   ui.progressBar.style.width = '0%';
-  ui.progressLabel.innerText = 'Initializing WebGPU / WASM...';
+  ui.progressLabel.innerText = 'Initializing WebGPU / API...';
   
   ui.statusDot.className = 'indicator-dot loading';
   ui.statusText.innerText = 'AI Status: Initializing...';
 
-  aiWorker.postMessage({
-    type: 'load',
-    modelId: selectedModel
+  if (selectedModel === 'cloud-gemini') {
+    const key = ui.apiKeyInput.value.trim();
+    if (!key) {
+      alert('Please enter a Google Gemini API Key to use Cloud fallback.');
+      ui.statusDot.className = 'indicator-dot idle';
+      ui.statusText.innerText = 'AI Error';
+      ui.progressContainer.classList.add('hidden');
+      return;
+    }
+    apiEngine.setApiKey(key);
+    activeEngine = apiEngine;
+  } else {
+    activeEngine = localEngine;
+  }
+
+  activeEngine.load(
+    selectedModel,
+    ({ status, message }) => {
+      ui.statusText.innerText = `AI Status: ${message}`;
+      if (status === 'loading' || status === 'downloading') {
+        ui.statusDot.className = 'indicator-dot loading';
+      }
+    },
+    ({ file, progress }) => {
+      ui.progressContainer.classList.remove('hidden');
+      const roundedProgress = Math.round(progress);
+      ui.progressBar.style.width = `${roundedProgress}%`;
+      ui.progressLabel.innerText = `Downloading ${file.split('/').pop()}: ${roundedProgress}%`;
+    }
+  ).then(({ device, modelId }) => {
+    isAIReady = true;
+    ui.statusDot.className = 'indicator-dot active';
+    ui.statusText.innerText = `AI Ready (${device.toUpperCase()})`;
+    ui.progressContainer.classList.add('hidden');
+    ui.loadModelBtn.innerText = 'Loaded';
+    ui.loadModelBtn.disabled = true;
+    ui.modelSelect.disabled = true;
+    ui.apiKeyInput.disabled = true;
+    
+    // Toggle LOCAL · GPU Badge based on the physical engine device
+    if (device === 'webgpu') {
+      ui.gpuBadge.classList.remove('hidden');
+    } else {
+      ui.gpuBadge.classList.add('hidden');
+    }
+
+    // Allow Chat interactions
+    ui.chatInput.disabled = false;
+    ui.sendChatBtn.disabled = false;
+    
+    console.log(`Model ${modelId} ready on ${device}`);
+  }).catch((error) => {
+    isAIReady = false;
+    isGenerating = false;
+    ui.statusDot.className = 'indicator-dot idle';
+    ui.statusText.innerText = 'AI Error';
+    alert(`Model loading error: ${error.message || error}\n\nFalling back to procedural mode.`);
+    ui.progressContainer.classList.add('hidden');
   });
 }
 
@@ -236,7 +239,7 @@ function generateBiomeLore(gridX, gridY, biome) {
   entry.innerHTML = `
     <span class="entry-coord">[X: ${gridX}, Y: ${gridY}]</span>
     <h4 class="pixel-font" style="color:var(--accent-cyan)">${biome.name}</h4>
-    <p id="lore-${gridX}-${gridY}">${biome.lore}</p>
+    <p id="lore-${gridX}-${gridY}">Scanning coordinates...</p>
   `;
   ui.loreEntries.insertBefore(entry, ui.loreEntries.firstChild);
 
@@ -245,27 +248,35 @@ function generateBiomeLore(gridX, gridY, biome) {
     const prompt = `Write a brief, mysterious sentence describing the land at X:${gridX}, Y:${gridY}. It is a ${biome.name}.`;
     const system = "You are an ancient mystical fantasy chronicler. Write a single poetic sentence under 20 words describing the coordinates and the biome. Keep it very short, mysterious, and atmospheric.";
     
-    // We listen to the token streaming by dynamically creating a small hook
-    // For simplicity, we just trigger a background generator and update the text when complete!
-    const tempWorker = new Worker(new URL('./workers/ai.worker.js', import.meta.url), { type: 'module' });
-    tempWorker.postMessage({ type: 'load', modelId: ui.modelSelect.value });
-    
-    tempWorker.onmessage = (e) => {
-      if (e.data.type === 'ready') {
-        tempWorker.postMessage({
-          type: 'generate',
-          systemPrompt: system,
-          userPrompt: prompt,
-          maxTokens: 30
-        });
-      } else if (e.data.type === 'complete') {
-        const loreEl = document.getElementById(`lore-${gridX}-${gridY}`);
-        if (loreEl) {
-          loreEl.innerText = e.data.text.trim();
-        }
-        tempWorker.terminate();
+    const loreEl = document.getElementById(`lore-${gridX}-${gridY}`);
+    if (loreEl) {
+      loreEl.innerText = '';
+    }
+
+    activeEngine.generate(system, prompt, 30, 0.7, (token) => {
+      const liveLoreEl = document.getElementById(`lore-${gridX}-${gridY}`);
+      if (liveLoreEl) {
+        liveLoreEl.innerText += token;
+        playTextBlip();
       }
-    };
+    }).then((fullText) => {
+      const finalLoreEl = document.getElementById(`lore-${gridX}-${gridY}`);
+      if (finalLoreEl) {
+        finalLoreEl.innerText = fullText.trim();
+      }
+    }).catch((err) => {
+      console.error('Biome lore generation failed:', err);
+      const fallbackLoreEl = document.getElementById(`lore-${gridX}-${gridY}`);
+      if (fallbackLoreEl) {
+        fallbackLoreEl.innerText = biome.lore;
+      }
+    });
+  } else {
+    // If AI is not ready, write procedural default lore immediately
+    const el = document.getElementById(`lore-${gridX}-${gridY}`);
+    if (el) {
+      el.innerText = biome.lore;
+    }
   }
 }
 
@@ -283,9 +294,10 @@ function initiateNPCDialogue(npc) {
   // Draw procedural portrait
   drawNPCPortrait(npc);
 
-  // Default introductory dialogue bubble
+  // introductory dialogue bubble
   const bubble = document.createElement('div');
-  bubble.className = 'chat-bubble npc-bubble';
+  // Add 'thinking' class for premium pulsing until the first token streams!
+  bubble.className = 'chat-bubble npc-bubble thinking';
   bubble.innerHTML = `<p id="npcDialogueText">...</p>`;
   ui.chatHistory.appendChild(bubble);
 
@@ -299,14 +311,38 @@ function initiateNPCDialogue(npc) {
     const system = `You are ${npc.name}, a wise, enigmatic ${npc.title} located in the ${npc.tileType}. Backstory: ${npc.backstory}. You speak retro-fantasy English. Keep answers under 25 words.`;
     const prompt = `Introduce yourself to the adventurer who just walked up to you.`;
 
-    aiWorker.postMessage({
-      type: 'generate',
-      systemPrompt: system,
-      userPrompt: prompt,
-      maxTokens: 40
+    let isFirstToken = true;
+
+    activeEngine.generate(system, prompt, 40, 0.7, (token) => {
+      if (isFirstToken) {
+        bubble.classList.remove('thinking');
+        isFirstToken = false;
+      }
+      accumulatedResponseText += token;
+      const dialogueTextEl = document.getElementById('npcDialogueText');
+      if (dialogueTextEl) {
+        dialogueTextEl.innerText = accumulatedResponseText;
+        ui.chatHistory.scrollTop = ui.chatHistory.scrollHeight;
+        playTextBlip();
+      }
+    }).then((fullText) => {
+      isGenerating = false;
+      ui.statusDot.className = 'indicator-dot active';
+      ui.statusText.innerText = 'AI Ready';
+      ui.chatInput.disabled = false;
+      ui.sendChatBtn.disabled = false;
+      
+      activeNPCHistory.push({ role: 'assistant', content: fullText });
+    }).catch((err) => {
+      isGenerating = false;
+      bubble.classList.remove('thinking');
+      ui.statusDot.className = 'indicator-dot active';
+      ui.statusText.innerText = 'AI Ready';
+      document.getElementById('npcDialogueText').innerText = `Greetings, traveler. I am ${npc.name}, the ${npc.title}. I seek relics in this grid.`;
     });
   } else {
     // Offline / Fallback greeting
+    bubble.classList.remove('thinking');
     document.getElementById('npcDialogueText').innerText = `Greetings, traveler. I am ${npc.name}, the ${npc.title}. I seek relics in this grid at [${npc.gridX}, ${npc.gridY}]. (Enable WebGPU AI to chat freely!)`;
   }
 }
@@ -330,9 +366,9 @@ ui.chatForm.addEventListener('submit', (e) => {
   ui.chatHistory.appendChild(userBubble);
   ui.chatHistory.scrollTop = ui.chatHistory.scrollHeight;
 
-  // Create NPC response bubble (ready to be filled by token stream)
+  // Create NPC response bubble (pulsing with thinking glow until loaded)
   const npcBubble = document.createElement('div');
-  npcBubble.className = 'chat-bubble npc-bubble';
+  npcBubble.className = 'chat-bubble npc-bubble thinking';
   npcBubble.innerHTML = `<p id="npcDialogueText">...</p>`;
   ui.chatHistory.appendChild(npcBubble);
   ui.chatHistory.scrollTop = ui.chatHistory.scrollHeight;
@@ -355,11 +391,38 @@ ui.chatForm.addEventListener('submit', (e) => {
 
   activeNPCHistory.push({ role: 'user', content: query });
 
-  aiWorker.postMessage({
-    type: 'generate',
-    systemPrompt: system,
-    userPrompt: prompt,
-    maxTokens: 50
+  let isFirstToken = true;
+
+  activeEngine.generate(system, prompt, 50, 0.7, (token) => {
+    if (isFirstToken) {
+      npcBubble.classList.remove('thinking');
+      isFirstToken = false;
+    }
+    accumulatedResponseText += token;
+    const dialogueTextEl = document.getElementById('npcDialogueText');
+    if (dialogueTextEl) {
+      dialogueTextEl.innerText = accumulatedResponseText;
+      ui.chatHistory.scrollTop = ui.chatHistory.scrollHeight;
+      playTextBlip();
+    }
+  }).then((fullText) => {
+    isGenerating = false;
+    ui.statusDot.className = 'indicator-dot active';
+    ui.statusText.innerText = 'AI Ready';
+    ui.chatInput.disabled = false;
+    ui.sendChatBtn.disabled = false;
+    ui.chatInput.focus();
+    
+    // Add model's reply to history
+    activeNPCHistory.push({ role: 'assistant', content: fullText });
+  }).catch((err) => {
+    isGenerating = false;
+    npcBubble.classList.remove('thinking');
+    ui.statusDot.className = 'indicator-dot active';
+    ui.statusText.innerText = 'AI Ready';
+    ui.chatInput.disabled = false;
+    ui.sendChatBtn.disabled = false;
+    document.getElementById('npcDialogueText').innerText = `Forgive me, my mind wanders. The energies of this place block my thoughts...`;
   });
 });
 
