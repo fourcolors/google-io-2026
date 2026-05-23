@@ -5,14 +5,9 @@
       "Skill(superpowers:using-superpowers)",
       "Skill(superpowers:using-superpowers:*)",
       "Bash(mix test *)",
-      "Bash(awk '/<h2>Open decisions/,/<h2>/' /Users/fourcolors/Projects/1_active/flow-industry/flowstay/docs/discussions/2026-05-21-reservhotel-adapter-implementation.html)",
-      "Bash(awk '/<h2>Open decisions/,/<h2>/' /Users/fourcolors/Projects/1_active/flow-industry/flowstay/docs/discussions/2026-05-21-section-7-implementation.html)",
       "Bash(python3 -c ' *)",
       "Skill(ping-pong)",
       "Skill(ping-pong:*)"
-    ],
-    "additionalDirectories": [
-      "/Users/fourcolors/Projects/1_active/flow-industry"
     ]
   },
   "hooks": {

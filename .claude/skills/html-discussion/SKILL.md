@@ -44,7 +44,6 @@ More scripts (swap, copy, paste, delete, replace, clip, save-snippet) will be ad
 - **`plex-paper.css`** (default) — IBM Plex Serif/Sans/Mono via Google Fonts. Warm editorial paper palette with distinctive Plex letterforms.
 - **`warm-paper.css`** — system fonts only (Georgia / system-ui / ui-monospace). Thariq-inspired ivory/clay/olive palette. Zero network round-trips.
 - **`dark-blueprint.css`** — dark-first, system mono primary, cool blue accent. For technical / system-state pages.
-- **`flowstay.css`** — the real FlowStay brand. Dark-first; gold accent; Cormorant Garamond display + DM Sans body + JetBrains Mono. Mirrors `app/priv/static/assets/css/flow_tokens.css`. Use for brand-aligned discussion artifacts.
 - **`tactile.css`** — dark neomorphism. Surfaces share bg color; depth comes from a consistent two-shadow pair (no borders). Orange accent, mono labels. Use when the artifact should feel like a physical control surface.
 
 Themes define CSS custom properties only; the shell snippet defines the layout/component CSS using those variables. Swapping themes recolors without reflow.
