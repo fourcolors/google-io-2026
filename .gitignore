@@ -4,3 +4,9 @@ dist
 .scratch
 .gemini
 *.local
+.env
+.env.*
+*.pem
+*.key
+credentials*.json
+.secrets
