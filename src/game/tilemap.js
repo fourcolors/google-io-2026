@@ -146,8 +146,8 @@ export function getNPCAt(x, y) {
   const tile = getTileAt(x, y);
   if (!tile.walkable || tile.id === BIOMES.RUINS.id) return null;
 
-  // Guarantees an NPC spawn right next to the player's starting position (-4,0) for seamless demo-day play
-  const isDemoNpc = (x === -5 && y === 0);
+  // Guarantees an NPC spawn right next to the player's starting position (-5,0) for seamless demo-day play
+  const isDemoNpc = (x === -4 && y === 0);
 
   // Hash check for NPC spawning (roughly ~1.5% chance per grid cell)
   const spawnHash = pseudoNoise2D(x, y, SEED + 999);

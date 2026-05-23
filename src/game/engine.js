@@ -11,9 +11,9 @@ export class GameEngine {
 
     // Player position (Tile aligned)
     this.player = {
-      gridX: -4,
+      gridX: -5,
       gridY: 0,
-      targetGridX: -4,
+      targetGridX: -5,
       targetGridY: 0,
       moveProgress: 0,
       moveSpeed: 0.08, // Smoothness rate per frame

@@ -290,7 +290,7 @@
       <div class="divider"></div>
       <div id="loreEntries">
         <div class="lore-entry">
-          <span class="entry-coord">[X: -4, Y: 0]</span>
+          <span class="entry-coord">[X: -5, Y: 0]</span>
           <p>Your journey begins at the center of the world. Move with
           <span class="key-cap">W</span><span class="key-cap">A</span><span class="key-cap">S</span><span class="key-cap">D</span>
           to discover the land.</p>
@@ -535,7 +535,7 @@ function getNPCAt(x, y) {
   if (Math.abs(x) < 3 && Math.abs(y) < 3) return null;
   const tile = getTileAt(x, y);
   if (!tile.walkable || tile.id === BIOMES.RUINS.id) return null;
-  const isDemoNpc = (x === -5 && y === 0);
+  const isDemoNpc = (x === -4 && y === 0);
   if (pseudoNoise2D(x, y, SEED+999) > 0.985 || isDemoNpc) {
     const ni = Math.floor(pseudoNoise2D(x,y,SEED+1)*NPC_NAMES.length);
     const ti = Math.floor(pseudoNoise2D(x,y,SEED+2)*NPC_TITLES.length);
@@ -673,7 +673,7 @@ class GameRenderer {
 class GameEngine {
   constructor(renderer, onEvent) {
     this.renderer = renderer; this.onEvent = onEvent;
-    this.player = { gridX:-4, gridY:0, targetGridX:-4, targetGridY:0, moveProgress:0, moveSpeed:0.08, isMoving:false, direction:"down", currentBiome:null };
+    this.player = { gridX:-5, gridY:0, targetGridX:-5, targetGridY:0, moveProgress:0, moveSpeed:0.08, isMoving:false, direction:"down", currentBiome:null };
     this.camera = { x:0, y:0, ease:0.1 };
     this.discoveredNPCs = {}; this.keys = {}; this.activeNPC = null;
     this.initInputs();
