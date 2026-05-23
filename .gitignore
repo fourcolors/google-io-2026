@@ -11,3 +11,6 @@ dist
 credentials*.json
 .secrets
 public/models/
+.agents/
+.claude/
+.codex/
