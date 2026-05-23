@@ -1,0 +1,11 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.10.16, pytest-9.0.3, pluggy-1.6.0 -- /Users/fourcolors/Projects/1_active/flow-industry/flowstay/worker/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/fourcolors/Projects/1_active/flow-industry/flowstay/worker
+configfile: pyproject.toml
+testpaths: tests
+collecting ... collected 1 item
+
+tests/test_smoke.py::test_package_versioned PASSED                       [100%]
+
+============================== 1 passed in 0.00s ===============================

@@ -1,0 +1,58 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__livekit-docs__docs_search",
+      "Skill(superpowers:using-superpowers)",
+      "Skill(superpowers:using-superpowers:*)",
+      "Bash(mix test *)",
+      "Bash(awk '/<h2>Open decisions/,/<h2>/' /Users/fourcolors/Projects/1_active/flow-industry/flowstay/docs/discussions/2026-05-21-reservhotel-adapter-implementation.html)",
+      "Bash(awk '/<h2>Open decisions/,/<h2>/' /Users/fourcolors/Projects/1_active/flow-industry/flowstay/docs/discussions/2026-05-21-section-7-implementation.html)",
+      "Bash(python3 -c ' *)",
+      "Skill(ping-pong)",
+      "Skill(ping-pong:*)"
+    ],
+    "additionalDirectories": [
+      "/Users/fourcolors/Projects/1_active/flow-industry"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/ensure-scratch.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/ensure-scratch.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/ensure-scratch.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/ensure-scratch.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

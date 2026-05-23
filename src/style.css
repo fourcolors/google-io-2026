@@ -1,0 +1,764 @@
+/* ==========================================================================
+   GemmaQuest - Modern Retro Styling & Design System
+   ========================================================================== */
+
+:root {
+  --font-display: 'Press Start 2P', monospace;
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Color Palette - Cyber Fantasy Theme */
+  --bg-dark: #0a0813;
+  --bg-dark-trans: rgba(10, 8, 19, 0.7);
+  --glass-bg: rgba(22, 17, 43, 0.45);
+  --glass-border: rgba(132, 90, 247, 0.25);
+  --glass-border-hover: rgba(132, 90, 247, 0.5);
+  --text-primary: #f1ecff;
+  --text-muted: #a69cbd;
+  
+  /* Vibrant Accents */
+  --accent-purple: #845af7;
+  --accent-purple-glow: rgba(132, 90, 247, 0.4);
+  --accent-cyan: #00e5ff;
+  --accent-cyan-glow: rgba(0, 229, 255, 0.4);
+  --accent-gold: #ffd700;
+  --accent-gold-glow: rgba(255, 215, 0, 0.4);
+  --accent-pink: #ff2a85;
+  --accent-pink-glow: rgba(255, 42, 133, 0.4);
+  
+  /* Status Colors */
+  --color-success: #00e676;
+  --color-warning: #ffb300;
+  --color-error: #ff1744;
+  
+  /* Animation Speeds */
+  --transition-fast: 0.15s ease;
+  --transition-smooth: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================================================
+   Base Elements & Layouts
+   ========================================================================== */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* 60 FPS Background Game Canvas */
+#gameCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+/* ==========================================================================
+   UI Overlays & Glassmorphism
+   ========================================================================== */
+
+.ui-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none; /* Let clicks pass to canvas except for UI elements */
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "topbar topbar"
+    "sidebar main"
+    "sidebar bottom";
+  padding: 20px;
+  gap: 20px;
+}
+
+/* Glassmorphic Panel Core */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4),
+              inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  pointer-events: auto; /* Re-enable clicks for menus */
+  transition: border-color var(--transition-smooth), 
+              box-shadow var(--transition-smooth), 
+              transform var(--transition-smooth);
+}
+
+.glass:hover {
+  border-color: var(--glass-border-hover);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  overflow: hidden;
+}
+
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
+  margin: 12px 0;
+  width: 100%;
+}
+
+/* Typography Utility Classes */
+.pixel-font {
+  font-family: var(--font-display);
+  font-size: 12px;
+  line-height: 1.4;
+  letter-spacing: 0.5px;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ==========================================================================
+   Header Component
+   ========================================================================== */
+
+.top-bar {
+  grid-area: topbar;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  height: 64px;
+}
+
+.game-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.game-logo .pixel-font {
+  font-size: 16px;
+  text-shadow: 0 0 10px var(--accent-cyan-glow);
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  background: rgba(0, 229, 255, 0.15);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: var(--accent-cyan);
+  border-radius: 20px;
+  letter-spacing: 1px;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.1);
+}
+
+.model-status-panel {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.indicator-dot.idle {
+  color: var(--text-muted);
+  background-color: var(--text-muted);
+}
+
+.indicator-dot.loading {
+  color: var(--color-warning);
+  background-color: var(--color-warning);
+  animation: pulse-glow 1.5s infinite;
+}
+
+.indicator-dot.active {
+  color: var(--color-success);
+  background-color: var(--color-success);
+  animation: active-glow 1.5s infinite;
+}
+
+.status-text {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.model-select {
+  background: rgba(10, 8, 19, 0.6);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+
+.model-select:focus {
+  border-color: var(--accent-purple);
+}
+
+/* ==========================================================================
+   Center Panel (Game Loader/Intro)
+   ========================================================================== */
+
+.center-panel {
+  grid-area: main;
+  justify-self: center;
+  align-self: center;
+  width: 480px;
+  padding: 32px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px var(--accent-purple-glow);
+  animation: panel-fade-in 0.5s ease-out;
+}
+
+.title-large {
+  font-size: 26px;
+  letter-spacing: 2px;
+  text-shadow: 0 0 15px var(--accent-purple-glow);
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+
+.description-block {
+  background: rgba(10, 8, 19, 0.4);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: left;
+  color: var(--text-muted);
+}
+
+.description-block strong {
+  color: var(--text-primary);
+}
+
+/* Model Loading Progress Bar */
+.progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.progress-bar-wrapper {
+  background: rgba(10, 8, 19, 0.8);
+  border: 1px solid var(--glass-border);
+  height: 12px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple), var(--accent-pink));
+  border-radius: 20px;
+  transition: width 0.1s linear;
+  box-shadow: 0 0 10px var(--accent-purple-glow);
+}
+
+.progress-label {
+  font-size: 12px;
+  color: var(--accent-cyan);
+}
+
+.loading-warning {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.footnote {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   Left Sidebar Panel (Realm Journal)
+   ========================================================================== */
+
+.left-sidebar {
+  grid-area: sidebar;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-title {
+  font-size: 10px;
+  color: var(--accent-cyan);
+  text-shadow: 0 0 5px var(--accent-cyan-glow);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lore-entries {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-right: 4px;
+}
+
+/* Custom Scrollbar */
+.lore-entries::-webkit-scrollbar,
+.chat-history::-webkit-scrollbar {
+  width: 4px;
+}
+
+.lore-entries::-webkit-scrollbar-thumb,
+.chat-history::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 4px;
+}
+
+.lore-entries::-webkit-scrollbar-thumb:hover,
+.chat-history::-webkit-scrollbar-thumb:hover {
+  background: var(--glass-border-hover);
+}
+
+.lore-entry {
+  font-size: 12px;
+  line-height: 1.5;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  padding: 12px;
+  animation: slide-in-bottom 0.3s ease-out;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.lore-entry .entry-coord {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 8px;
+  color: var(--accent-gold);
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+}
+
+.lore-entry p {
+  color: var(--text-muted);
+}
+
+.lore-entry.biome-entry p {
+  color: var(--text-primary);
+}
+
+.lore-entry.biome-entry {
+  border-left: 2px solid var(--accent-purple);
+  background: linear-gradient(90deg, rgba(132, 90, 247, 0.05), transparent);
+}
+
+.key-cap {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-bottom-width: 3px;
+  color: var(--text-primary);
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin: 0 2px;
+  font-family: var(--font-display);
+  display: inline-block;
+}
+
+/* ==========================================================================
+   Bottom Chat Dialog Panel (NPC Interaction)
+   ========================================================================== */
+
+.bottom-bar {
+  grid-area: bottom;
+  justify-self: center;
+  width: 100%;
+  max-width: 720px;
+  max-height: 240px;
+  height: 240px;
+  display: flex;
+  flex-direction: column;
+  animation: slide-in-top 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4), 0 0 20px var(--accent-cyan-glow);
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.npc-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.npc-portrait {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  image-rendering: pixelated;
+  background: rgba(10, 8, 19, 0.8);
+}
+
+.npc-name {
+  font-size: 10px;
+  color: var(--accent-cyan);
+}
+
+.npc-title {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.btn-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 20px;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.btn-close:hover {
+  color: var(--accent-pink);
+}
+
+.chat-history {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+
+.chat-bubble {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  animation: pop-bubble 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.chat-bubble p {
+  color: var(--text-primary);
+}
+
+.npc-bubble {
+  background: rgba(132, 90, 247, 0.15);
+  border: 1px solid rgba(132, 90, 247, 0.25);
+  align-self: flex-start;
+  border-bottom-left-radius: 0;
+}
+
+.user-bubble {
+  background: rgba(0, 229, 255, 0.15);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  align-self: flex-end;
+  border-bottom-right-radius: 0;
+}
+
+.chat-input-wrapper {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.chat-input-wrapper input {
+  flex: 1;
+  background: rgba(10, 8, 19, 0.8);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  padding: 10px 16px;
+  border-radius: 6px;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  transition: border-color var(--transition-fast);
+}
+
+.chat-input-wrapper input:focus {
+  border-color: var(--accent-cyan);
+}
+
+.chat-input-wrapper input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Buttons & User Inputs
+   ========================================================================== */
+
+.btn {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  outline: none;
+  transition: transform var(--transition-fast), 
+              box-shadow var(--transition-fast), 
+              background var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.btn:active {
+  transform: scale(0.95);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-purple), #6332eb);
+  box-shadow: 0 4px 14px var(--accent-purple-glow);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #9773f9, var(--accent-purple));
+  box-shadow: 0 6px 18px rgba(132, 90, 247, 0.6);
+}
+
+.btn-accent {
+  background: linear-gradient(135deg, var(--accent-cyan), #00b0ff);
+  color: #05040a;
+  box-shadow: 0 4px 14px var(--accent-cyan-glow);
+}
+
+.btn-accent:hover {
+  background: linear-gradient(135deg, #5df3ff, var(--accent-cyan));
+  box-shadow: 0 6px 18px rgba(0, 229, 255, 0.6);
+}
+
+.pixel-btn-small {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  letter-spacing: 0.5px;
+}
+
+#startGameBtn {
+  font-size: 11px;
+  padding: 14px 28px;
+  letter-spacing: 1px;
+}
+
+/* ==========================================================================
+   Secondary Overlays (Controls & Audio Info)
+   ========================================================================== */
+
+.controls-guide {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 200px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+.guide-title {
+  font-size: 8px;
+  color: var(--accent-gold);
+  text-shadow: 0 0 5px var(--accent-gold-glow);
+  margin-bottom: 4px;
+}
+
+.guide-item {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.audio-indicator {
+  position: absolute;
+  top: 84px;
+  right: 20px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  color: var(--color-success);
+}
+
+.audio-indicator.muted {
+  color: var(--text-muted);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ==========================================================================
+   Visual Effects (CRT, Scanlines, Vignette)
+   ========================================================================== */
+
+.crt-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.12) 50%);
+  background-size: 100% 4px;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.crt-overlay::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: rgba(18, 16, 16, 0.1);
+  opacity: 0;
+  z-index: 10;
+  pointer-events: none;
+  animation: flicker 0.15s infinite;
+}
+
+.vignette {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.65);
+  z-index: 9;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Animations & Keyframes
+   ========================================================================== */
+
+@keyframes pulse-glow {
+  0% { transform: scale(1); box-shadow: 0 0 4px currentColor; }
+  50% { transform: scale(1.15); box-shadow: 0 0 12px currentColor; }
+  100% { transform: scale(1); box-shadow: 0 0 4px currentColor; }
+}
+
+@keyframes active-glow {
+  0% { transform: scale(1); box-shadow: 0 0 4px currentColor; opacity: 0.8; }
+  50% { transform: scale(1.2); box-shadow: 0 0 16px currentColor; opacity: 1; }
+  100% { transform: scale(1); box-shadow: 0 0 4px currentColor; opacity: 0.8; }
+}
+
+@keyframes flicker {
+  0% { opacity: 0.057; }
+  50% { opacity: 0.021; }
+  100% { opacity: 0.089; }
+}
+
+@keyframes panel-fade-in {
+  from { opacity: 0; transform: translate(-50%, -45%) scale(0.95); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Note: center panel is actually centered using flex/grid structure rather than translate inside absolute positioning if using proper layout, but just in case, standard layout */
+.center-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+}
+
+@keyframes slide-in-bottom {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-top {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pop-bubble {
+  from { opacity: 0; transform: scale(0.9) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Utility Hidden state */
+.hidden {
+  display: none !important;
+}
+
+/* Custom class for disabled state */
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}

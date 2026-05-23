@@ -1,0 +1,56 @@
+Compiling 1 file (.ex)
+    warning: the following clause will never match:
+
+        {:error, reason}
+
+    because it attempts to match on the result of:
+
+        insert_event_row(event_id, type, occurred_at, payload)
+
+    which has type:
+
+        dynamic({:new or :replay, term()})
+
+    typing violation found at:
+    │
+ 56 │       {:error, reason} ->
+    │       ~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/flowstay/identity/workos_processor.ex:56: Flowstay.Identity.WorkOSProcessor.process_event/1
+
+     warning: clauses with the same name and arity (number of arguments) should be grouped together, "def handle_call/3" was previously defined (lib/flowstay/session.ex:115)
+     │
+ 178 │   def handle_call(:go_back, _from, state) do
+     │       ~
+     │
+     └─ lib/flowstay/session.ex:178:7
+
+     warning: clauses with the same name and arity (number of arguments) should be grouped together, "def handle_call/3" was previously defined (lib/flowstay/session.ex:115)
+     │
+ 239 │   def handle_call({:update_scene_state, key, value}, _from, state) do
+     │       ~
+     │
+     └─ lib/flowstay/session.ex:239:7
+
+    warning: found quoted atom "qualifier_claims" but the quotes are not required. Atoms made exclusively of ASCII letters, numbers, underscores, beginning with a letter or underscore, and optionally ending with ! or ? do not require quotes
+    │
+ 26 │       :"qualifier_claims"
+    │       ~
+    │
+    └─ lib/flowstay/scenes/context_gathering.ex:26:7
+
+    warning: unused alias CanonicalState
+    │
+ 11 │   alias Flowstay.Session.CanonicalState
+    │   ~
+    │
+    └─ lib/flowstay/scenes/context_gathering.ex:11:3
+
+Generated flowstay app
+Running ExUnit with seed: 617837, max_cases: 32
+Excluding tags: [:test, :real_models]
+Including tags: [describe: "§3.4-011 — MCPRuntime.dispatch/3 positive path (FSM-gated)"]
+
+..
+Finished in 0.1 seconds (0.00s async, 0.1s sync)
+2 tests, 0 failures (12 excluded)

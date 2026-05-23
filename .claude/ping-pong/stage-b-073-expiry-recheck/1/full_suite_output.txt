@@ -1,0 +1,116 @@
+    warning: function capabilities/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.TravelClick)
+    │
+  1 │ defmodule Flowstay.CRS.TravelClick do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/flowstay/crs/travel_click.ex:1: Flowstay.CRS.TravelClick (module)
+
+    warning: function metadata/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.TravelClick)
+    │
+  1 │ defmodule Flowstay.CRS.TravelClick do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/flowstay/crs/travel_click.ex:1: Flowstay.CRS.TravelClick (module)
+
+    warning: function capabilities/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.Adapter.Test)
+    │
+  1 │ defmodule Flowstay.CRS.Adapter.Test do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/support/crs_adapter_test_impl.ex:1: Flowstay.CRS.Adapter.Test (module)
+
+    warning: function metadata/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.Adapter.Test)
+    │
+  1 │ defmodule Flowstay.CRS.Adapter.Test do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/support/crs_adapter_test_impl.ex:1: Flowstay.CRS.Adapter.Test (module)
+
+Running ExUnit with seed: 302173, max_cases: 32
+Excluding tags: [:real_models]
+
+......................................................................................................................................................................................................................................................................................................................................................................................................................................    warning: unused alias Adapter
+    │
+ 50 │   alias Flowstay.CRS.Adapter
+    │   ~
+    │
+    └─ test/flowstay/crs/adapter_compliance_test.exs:50:3
+
+................................................................................................................................................................................................................................................................................................................................................    warning: function capabilities/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.BehavioralRuntimeTest.BehavioralStubCRS)
+    │
+ 32 │   defmodule BehavioralStubCRS do
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/flowstay/behavioral_runtime_test.exs:32: Flowstay.BehavioralRuntimeTest.BehavioralStubCRS (module)
+
+    warning: function metadata/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.BehavioralRuntimeTest.BehavioralStubCRS)
+    │
+ 32 │   defmodule BehavioralStubCRS do
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/flowstay/behavioral_runtime_test.exs:32: Flowstay.BehavioralRuntimeTest.BehavioralStubCRS (module)
+
+    warning: function capabilities/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.SearchTest.StubAdapter)
+    │
+ 11 │   defmodule StubAdapter do
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/flowstay/search_test.exs:11: Flowstay.SearchTest.StubAdapter (module)
+
+    warning: function capabilities/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.MCPRuntimeTest.TestStubCRS)
+    │
+ 21 │   defmodule TestStubCRS do
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/flowstay/mcp_runtime_test.exs:21: Flowstay.MCPRuntimeTest.TestStubCRS (module)
+
+    warning: function metadata/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.SearchTest.StubAdapter)
+    │
+ 11 │   defmodule StubAdapter do
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/flowstay/search_test.exs:11: Flowstay.SearchTest.StubAdapter (module)
+
+    warning: function metadata/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.MCPRuntimeTest.TestStubCRS)
+    │
+ 21 │   defmodule TestStubCRS do
+    │   ~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/flowstay/mcp_runtime_test.exs:21: Flowstay.MCPRuntimeTest.TestStubCRS (module)
+
+     warning: module attribute @impl was not set for function check_availability/1 callback (specified in Flowstay.CRS.Adapter). This either means you forgot to add the "@impl true" annotation before the definition or that you are accidentally overriding this callback
+     │
+ 180 │     def check_availability(_hold) do
+     │     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ test/flowstay/workers/hold_expiry_worker_test.exs:180: Flowstay.Workers.HoldExpiryWorkerTest.TestAdapter (module)
+
+    warning: function capabilities/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CartTest.StubCRS)
+    │
+ 15 │   defmodule StubCRS do
+    │   ~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/flowstay/cart_test.exs:15: Flowstay.CartTest.StubCRS (module)
+
+    warning: function metadata/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CartTest.StubCRS)
+    │
+ 15 │   defmodule StubCRS do
+    │   ~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/flowstay/cart_test.exs:15: Flowstay.CartTest.StubCRS (module)
+
+........................................................................................[dry-run] step 1: createOrganization (WorkOS) -- skipped
+[dry-run] step 2: INSERT orgs flowstay-internal -- skipped
+[dry-run] step 3: define org-system-admin custom role -- skipped
+.step 1: createOrganization (WorkOS) -- short-circuit in dev/test
+step 2: orgs flowstay-internal seeded (idempotent)
+step 3: define org-system-admin (slug stored AS-IS)
+step 1: createOrganization (WorkOS) -- short-circuit in dev/test
+step 2: orgs flowstay-internal seeded (idempotent)
+step 3: define org-system-admin (slug stored AS-IS)
+.step 1: createOrganization (WorkOS) -- short-circuit in dev/test
+step 2: orgs flowstay-internal seeded (idempotent)
+step 3: define org-system-admin (slug stored AS-IS)
+..................................................................................................................................................................................................................................................................................................................................................
+Finished in 5.9 seconds (0.6s async, 5.2s sync)
+1186 tests, 0 failures (1 excluded)

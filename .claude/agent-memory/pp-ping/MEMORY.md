@@ -1,0 +1,19 @@
+- [Flowstay workflow tests](project_flowstay_workflow_tests.md) — where tests for Flowstay.Workflow.* modules live + the established test shape
+- [Append vs new file](feedback_append_vs_new_test_file.md) — when extending a peer helper, append to the existing test file under a new describe block rather than spinning a sibling
+- [Regression pin scenarios](feedback_regression_pin_scenarios.md) — when prior-scenario short-circuit satisfies negative AC, ship test as regression pin; don't manufacture RED
+- [FlowStay test seam: Session GenServer seeding](project_session_genserver_seeding.md) — `:sys.replace_state` is the project's escape-hatch for canonical-state fields lacking a setter
+- [FlowStay seam: §-literal pin convention](project_flowstay_section_literal_pins.md) — catalog refresh greps describe-strings + test docstrings for `§N.N-NNN` literals
+- [Decomposition: derivation-liveness anchor](feedback_derivation_liveness_anchor.md) — when a spec says "derived live, not constant", pair the obvious case with a second case at a different input
+- [Test-name length ceiling](feedback_exunit_test_name_length.md) — ExUnit caps `describe` + `test` combined name at 255 chars; keep describe short
+- [Verify fake-module claims](feedback_verify_fake_module_claims.md) — 2026-05-21 Phase A S1: grep for `defmodule X` (incl test/support/) before specing "remove reference to non-existent X"; caught a near-regression
+- [FlowStay CRS Adapter test shape](project_flowstay_crs_adapter_test_shape.md) — `app/test/flowstay/crs/adapter_test.exs` is the canonical place for Adapter behaviour-contract pins; introspection idioms (behaviour_info/1, function_exported?/3, Code.fetch_docs/1)
+- [task-list reminder leakage](reference_task_list_reminder_leakage.md) — `teammate_id="task-list"` messages naming task #N missing from your TaskList are system reminders leaking lead's main-session tasks; ignore silently after first FYI
+- [function_exported? OTP-21 load order](feedback_function_exported_otp21.md) — `function_exported?/3` no longer auto-loads on OTP 21+; always pair with `Code.ensure_loaded!(Module)` on the line above
+- [Macro spec: two surfaces](feedback_macro_spec_two_surfaces.md) — when specing a `use Macro, opts` helper, require BOTH `__using__/1` AND a runtime `validate!/1`-style probe so fixture-driven negative tests work without recompiles
+- [macro_exported? for defmacro](feedback_macro_exported_for_defmacro.md) — `defmacro __using__/1` is invisible to `function_exported?/3` (compiles to `MACRO-__using__/2`); use `macro_exported?/3` instead. Sibling to the OTP-21 trap
+- [Session has two versions](project_session_two_versions.md) — state_version bumps on any mutation; scene_version only on scene change; pin tests on the right counter
+- [Property.adapter_module override](project_property_adapter_module_override.md) — canonical stub-injection: `Application.put_env(:flowstay, :crs_adapter_override, Stub)` + on_exit cleanup; layer per-call config via persistent_term keyed by the stub module
+- [Dynamic struct for clean RED](feedback_dynamic_struct_for_clean_red.md) — when target module is brand-new, use `struct(Mod, ...)` + `__struct__ ==` instead of `%Mod{...}` literals; keeps RED as UndefinedFunctionError not CompileError
+- [ReservHotel stub-key convention](project_reservhotel_b3_session_stub_keying.md) — `Req.Test.stub` keyed on `HttpClient` for ALL ReservHotel scenarios B.2+; env-driven plug wiring, not per-caller
+- [Error-normalizer input shape](feedback_error_normalizer_input_shape.md) — pin downstream input shape (post-wrapper-normalization), not raw vendor shape; cite the wrapper's normalization point in the describe-block comment
+- [Bidirectional table oracle](feedback_bidirectional_table_oracle.md) — round-trip property tests on bi-directional lookup modules need a hardcoded `@pairs` oracle; deriving from the module under test is self-satisfying

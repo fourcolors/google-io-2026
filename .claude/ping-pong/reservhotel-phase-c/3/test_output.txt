@@ -1,0 +1,59 @@
+    warning: function capabilities/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.TravelClick)
+    │
+  1 │ defmodule Flowstay.CRS.TravelClick do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/flowstay/crs/travel_click.ex:1: Flowstay.CRS.TravelClick (module)
+
+    warning: function metadata/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.TravelClick)
+    │
+  1 │ defmodule Flowstay.CRS.TravelClick do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/flowstay/crs/travel_click.ex:1: Flowstay.CRS.TravelClick (module)
+
+    warning: function capabilities/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.Adapter.Test)
+    │
+  1 │ defmodule Flowstay.CRS.Adapter.Test do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/support/crs_adapter_test_impl.ex:1: Flowstay.CRS.Adapter.Test (module)
+
+    warning: function metadata/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.Adapter.Test)
+    │
+  1 │ defmodule Flowstay.CRS.Adapter.Test do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/support/crs_adapter_test_impl.ex:1: Flowstay.CRS.Adapter.Test (module)
+
+Running ExUnit with seed: 35548, max_cases: 1
+Excluding tags: [:real_models]
+
+
+Flowstay.CRS.ReservHotelTest [test/flowstay/crs/reserv_hotel_test.exs]
+  * test Flowstay.CRS.Adapter behaviour conformance (Compliance macro) Flowstay.CRS.ReservHotel.capabilities/0 covers every behaviour operation [L#51]  * test Flowstay.CRS.Adapter behaviour conformance (Compliance macro) Flowstay.CRS.ReservHotel.capabilities/0 covers every behaviour operation (1.3ms) [L#51]
+  * test search_rooms/1 — :live mode (Req.Test.stub; no real network) POST body to /ibe5_rooms_v55 contains required form fields per RC4 contract [L#466]  * test search_rooms/1 — :live mode (Req.Test.stub; no real network) POST body to /ibe5_rooms_v55 contains required form fields per RC4 contract (31.9ms) [L#466]
+  * test search_rooms/1 — :live mode (Req.Test.stub; no real network) every live-mode room carries the corresponding IBE code in vendor_extras [L#515]  * test search_rooms/1 — :live mode (Req.Test.stub; no real network) every live-mode room carries the corresponding IBE code in vendor_extras (1.0ms) [L#515]
+  * test search_rooms/1 — :in_memory mode (default; 8-room migration) every room carries the corresponding IBE code in vendor_extras["reservhotel_room_code"] [L#144]  * test search_rooms/1 — :in_memory mode (default; 8-room migration) every room carries the corresponding IBE code in vendor_extras["reservhotel_room_code"] (0.05ms) [L#144]
+  * test search_rooms/1 — :in_memory mode (default; 8-room migration) prices for each room mirror the live RC4 probe (nightly_rate, totals, tax) [L#170]  * test search_rooms/1 — :in_memory mode (default; 8-room migration) prices for each room mirror the live RC4 probe (nightly_rate, totals, tax) (1.1ms) [L#170]
+  * test search_rooms/1 — :live mode (Req.Test.stub; no real network) invokes Session.start/0 first (GET ibe5.main observed) then POSTs to /ibe5_rooms_v55 [L#434]  * test search_rooms/1 — :live mode (Req.Test.stub; no real network) invokes Session.start/0 first (GET ibe5.main observed) then POSTs to /ibe5_rooms_v55 (1.0ms) [L#434]
+  * test hold lifecycle (synthetic; out-of-scope for C.3 but preserved) release_hold/1 returns :ok successfully [L#652]  * test hold lifecycle (synthetic; out-of-scope for C.3 but preserved) release_hold/1 returns :ok successfully (0.00ms) [L#652]
+  * test search_rooms/1 — :in_memory mode (default; 8-room migration) mode hygiene: explicit :in_memory env returns the same 8 rooms as default [L#327]  * test search_rooms/1 — :in_memory mode (default; 8-room migration) mode hygiene: explicit :in_memory env returns the same 8 rooms as default (0.02ms) [L#327]
+  * test Flowstay.CRS.Adapter behaviour conformance (Compliance macro) Flowstay.CRS.ReservHotel.metadata/0 returns a map with :hotel_id [L#51]  * test Flowstay.CRS.Adapter behaviour conformance (Compliance macro) Flowstay.CRS.ReservHotel.metadata/0 returns a map with :hotel_id (0.00ms) [L#51]
+  * test search_rooms/1 — :live mode (Req.Test.stub; no real network) returns 8 rooms with FlowStay stable IDs (shape-equivalent to in-memory mode) [L#415]  * test search_rooms/1 — :live mode (Req.Test.stub; no real network) returns 8 rooms with FlowStay stable IDs (shape-equivalent to in-memory mode) (1.0ms) [L#415]
+  * test Flowstay.CRS.Adapter behaviour conformance (Compliance macro) Flowstay.CRS.ReservHotel exports every behaviour callback [L#51]  * test Flowstay.CRS.Adapter behaviour conformance (Compliance macro) Flowstay.CRS.ReservHotel exports every behaviour callback (0.01ms) [L#51]
+  * test search_rooms/1 — parity (RC1's promised gain materializes) in_memory and live modes return identical room_id sets for the same request (RC1 parity) [L#561]  * test search_rooms/1 — parity (RC1's promised gain materializes) in_memory and live modes return identical room_id sets for the same request (RC1 parity) (0.9ms) [L#561]
+  * test search_rooms/1 — :in_memory mode (default; 8-room migration) deposit kind is :fixed (parity leg 3: must match Parser's :fixed output) [L#223]  * test search_rooms/1 — :in_memory mode (default; 8-room migration) deposit kind is :fixed (parity leg 3: must match Parser's :fixed output) (0.04ms) [L#223]
+  * test search_rooms/1 — :in_memory mode (default; 8-room migration) every room_id is a FlowStay stable ID from RoomMap (RM-* prefix) [L#132]  * test search_rooms/1 — :in_memory mode (default; 8-room migration) every room_id is a FlowStay stable ID from RoomMap (RM-* prefix) (0.03ms) [L#132]
+  * test confirm_booking/3 (synthetic; out-of-scope for C.3 but preserved) returns confirmed booking structure and cleans PCI credit card details [L#658]  * test confirm_booking/3 (synthetic; out-of-scope for C.3 but preserved) returns confirmed booking structure and cleans PCI credit card details (0.04ms) [L#658]
+  * test search_rooms/1 — :in_memory mode (default; 8-room migration) all rooms comply with Types.minimum_contract/0 [L#259]  * test search_rooms/1 — :in_memory mode (default; 8-room migration) all rooms comply with Types.minimum_contract/0 (0.6ms) [L#259]
+  * test search_rooms/1 — :in_memory mode (default; 8-room migration) returns all 8 rooms from the migrated in-memory space (was 5) [L#125]  * test search_rooms/1 — :in_memory mode (default; 8-room migration) returns all 8 rooms from the migrated in-memory space (was 5) (0.02ms) [L#125]
+  * test search_rooms/1 — :in_memory mode (default; 8-room migration) nightly_breakdown contains exactly N entries for an N-night stay (preserved semantic) [L#304]  * test search_rooms/1 — :in_memory mode (default; 8-room migration) nightly_breakdown contains exactly N entries for an N-night stay (preserved semantic) (0.02ms) [L#304]
+  * test search_rooms/1 — :in_memory mode (default; 8-room migration) cancellation is 72h-before-arrival (Cofresi 3-day rule) [L#247]  * test search_rooms/1 — :in_memory mode (default; 8-room migration) cancellation is 72h-before-arrival (Cofresi 3-day rule) (0.01ms) [L#247]
+  * test hold lifecycle (synthetic; out-of-scope for C.3 but preserved) create_hold/1 returns a 15-minute hold struct [L#634]  * test hold lifecycle (synthetic; out-of-scope for C.3 but preserved) create_hold/1 returns a 15-minute hold struct (1.3ms) [L#634]
+  * test hold lifecycle (synthetic; out-of-scope for C.3 but preserved) extend_hold/1 extends hold for another 15 minutes [L#643]  * test hold lifecycle (synthetic; out-of-scope for C.3 but preserved) extend_hold/1 extends hold for another 15 minutes (0.01ms) [L#643]
+  * test search_rooms/1 — :in_memory mode (default; 8-room migration) tax cadence is :per_stay (parity leg 2: must match Parser's :per_stay output) [L#200]  * test search_rooms/1 — :in_memory mode (default; 8-room migration) tax cadence is :per_stay (parity leg 2: must match Parser's :per_stay output) (0.04ms) [L#200]
+  * test metadata/0 returns correct hotel ID and booking engine links for Villa Cofresi [L#105]  * test metadata/0 returns correct hotel ID and booking engine links for Villa Cofresi (0.00ms) [L#105]
+
+Finished in 0.2 seconds (0.00s async, 0.2s sync)
+23 tests, 0 failures

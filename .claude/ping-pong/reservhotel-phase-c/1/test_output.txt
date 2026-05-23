@@ -1,0 +1,36 @@
+Compiling 1 file (.ex)
+    warning: function capabilities/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.TravelClick)
+    │
+  1 │ defmodule Flowstay.CRS.TravelClick do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/flowstay/crs/travel_click.ex:1: Flowstay.CRS.TravelClick (module)
+
+    warning: function metadata/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.TravelClick)
+    │
+  1 │ defmodule Flowstay.CRS.TravelClick do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/flowstay/crs/travel_click.ex:1: Flowstay.CRS.TravelClick (module)
+
+    warning: function capabilities/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.Adapter.Test)
+    │
+  1 │ defmodule Flowstay.CRS.Adapter.Test do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/support/crs_adapter_test_impl.ex:1: Flowstay.CRS.Adapter.Test (module)
+
+    warning: function metadata/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.Adapter.Test)
+    │
+  1 │ defmodule Flowstay.CRS.Adapter.Test do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/support/crs_adapter_test_impl.ex:1: Flowstay.CRS.Adapter.Test (module)
+
+Generated flowstay app
+Running ExUnit with seed: 141052, max_cases: 32
+Excluding tags: [:real_models]
+
+..........
+Finished in 0.01 seconds (0.01s async, 0.00s sync)
+10 tests, 0 failures

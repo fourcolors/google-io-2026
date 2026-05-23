@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "scratch": {
+      "source": "fourcolors/skills",
+      "sourceType": "github",
+      "skillPath": "skills/scratch/SKILL.md",
+      "computedHash": "4de747d9644935dab27981b61ea5e9ec9412d2e0c6a7a6ca05bd0c482627e3a0"
+    }
+  }
+}

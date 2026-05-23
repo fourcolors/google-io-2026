@@ -1,0 +1,43 @@
+    warning: function capabilities/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.TravelClick)
+    │
+  1 │ defmodule Flowstay.CRS.TravelClick do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/flowstay/crs/travel_click.ex:1: Flowstay.CRS.TravelClick (module)
+
+    warning: function metadata/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.TravelClick)
+    │
+  1 │ defmodule Flowstay.CRS.TravelClick do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/flowstay/crs/travel_click.ex:1: Flowstay.CRS.TravelClick (module)
+
+    warning: function capabilities/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.Adapter.Test)
+    │
+  1 │ defmodule Flowstay.CRS.Adapter.Test do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/support/crs_adapter_test_impl.ex:1: Flowstay.CRS.Adapter.Test (module)
+
+    warning: function metadata/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.Adapter.Test)
+    │
+  1 │ defmodule Flowstay.CRS.Adapter.Test do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/support/crs_adapter_test_impl.ex:1: Flowstay.CRS.Adapter.Test (module)
+
+Running ExUnit with seed: 537764, max_cases: 32
+Excluding tags: [:real_models]
+
+
+
+  1) test use Flowstay.CRS.Adapter.Compliance — macro injection contract Compliance module exports __using__/1 (is invocable via `use`) (Flowstay.CRS.Adapter.ComplianceTest)
+     test/flowstay/crs/adapter_compliance_test.exs:166
+     Flowstay.CRS.Adapter.Compliance must define __using__/1 so adapter test files can `use Flowstay.CRS.Adapter.Compliance, adapter: SomeAdapter`
+     code: assert function_exported?(Compliance, :__using__, 1),
+     stacktrace:
+       test/flowstay/crs/adapter_compliance_test.exs:169: (test)
+
+.......
+Finished in 0.03 seconds (0.03s async, 0.00s sync)
+8 tests, 1 failure

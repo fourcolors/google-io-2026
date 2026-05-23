@@ -1,0 +1,12 @@
+{
+  "ensure-scratch": {
+    "enabled": false,
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "./scripts/ensure-scratch.sh",
+        "timeout": 10
+      }
+    ]
+  }
+}

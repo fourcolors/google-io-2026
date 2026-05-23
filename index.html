@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GemmaQuest: Generative WebGPU Realms</title>
+  <!-- SEO Tags -->
+  <meta name="description" content="A 100% serverless, local AI-driven RPG running entirely in the browser using WebGPU and Gemma ONNX.">
+  
+  <!-- Retro & Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <!-- CRT Screen Overlay Effect -->
+  <div class="crt-overlay"></div>
+  <div class="vignette"></div>
+
+  <div id="app">
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- UI Overlay container -->
+    <div class="ui-container">
+      
+      <!-- Top Bar: Game Stats & Model Info -->
+      <header class="top-bar glass">
+        <div class="game-logo">
+          <span class="pixel-font text-gradient">GemmaQuest</span>
+          <span class="badge">WebGPU Beta</span>
+        </div>
+        <div class="model-status-panel">
+          <div class="status-indicator">
+            <span class="indicator-dot idle" id="statusDot"></span>
+            <span class="status-text" id="statusText">AI Model: Idle</span>
+          </div>
+          <!-- Model Selection -->
+          <select id="modelSelect" class="model-select">
+            <option value="onnx-community/gemma-4-E2B-it-ONNX" selected>Gemma 4 E2B (Frontier - 1.5GB)</option>
+            <option value="onnx-community/gemma-3-270m-it-ONNX">Gemma 3 270M (Recommended - 150MB)</option>
+          </select>
+          <button id="loadModelBtn" class="btn btn-primary pixel-btn-small">Load AI</button>
+        </div>
+      </header>
+
+      <!-- Center Screen: Loading/Intro Panel -->
+      <div id="loaderPanel" class="panel glass center-panel">
+        <h2 class="pixel-font text-gradient title-large">GEMMAQUEST</h2>
+        <p class="subtitle">An Infinite Generative RPG Running 100% in Your Browser</p>
+        
+        <div class="description-block">
+          <p>Explore an endless procedurally generated map. As you walk, an on-device <strong>Google Gemma LLM</strong> powered by <strong>WebGPU</strong> will generate names, lore, dialogues, and quests completely offline in real-time.</p>
+        </div>
+
+        <div id="progressContainer" class="progress-container hidden">
+          <div class="progress-bar-wrapper">
+            <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+          </div>
+          <p id="progressLabel" class="progress-label">Downloading Model: 0%</p>
+          <p class="loading-warning">First load caches the model files. Subsequent plays will load instantly.</p>
+        </div>
+
+        <div class="btn-group">
+          <button id="startGameBtn" class="btn btn-accent pixel-font">ENTER THE REALM (Offline Mode)</button>
+        </div>
+        <p class="footnote">Note: WebGPU AI is initialized inside the realm. You can play procedurally immediately while it loads!</p>
+      </div>
+
+      <!-- Left Sidebar: Lore Log -->
+      <aside id="loreLogPanel" class="panel glass left-sidebar hidden">
+        <h3 class="panel-title pixel-font">Realm Journal</h3>
+        <div class="divider"></div>
+        <div id="loreEntries" class="lore-entries">
+          <div class="lore-entry default-entry">
+            <span class="entry-coord">[X: 0, Y: 0]</span>
+            <p>Your journey begins at the center of the world. Start moving with <span class="key-cap">W</span><span class="key-cap">A</span><span class="key-cap">S</span><span class="key-cap">D</span> or <span class="key-cap">▲</span><span class="key-cap">◀</span><span class="key-cap">▼</span><span class="key-cap">▶</span> to discover the land.</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Bottom Chat Bar: NPC Dialog Dialog -->
+      <section id="dialogPanel" class="panel glass bottom-bar hidden">
+        <div class="dialog-header">
+          <div class="npc-profile">
+            <canvas id="npcPortraitCanvas" width="48" height="48" class="npc-portrait"></canvas>
+            <div>
+              <h4 id="npcName" class="pixel-font npc-name">The Wanderer</h4>
+              <span id="npcTitle" class="npc-title">Lost Knight</span>
+            </div>
+          </div>
+          <button id="closeDialogBtn" class="btn-close">&times;</button>
+        </div>
+        <div class="divider"></div>
+        
+        <div id="chatHistory" class="chat-history">
+          <!-- Live conversation will go here -->
+          <div class="chat-bubble npc-bubble">
+            <p id="npcDialogueText">Greetings, explorer. The local Gemma model will shape my words when loaded...</p>
+          </div>
+        </div>
+
+        <form id="chatForm" class="chat-input-wrapper">
+          <input type="text" id="chatInput" placeholder="Ask the NPC anything..." autocomplete="off" disabled>
+          <button type="submit" id="sendChatBtn" class="btn btn-accent" disabled>Speak</button>
+        </form>
+      </section>
+
+      <!-- Bottom Right Overlay: Instructions -->
+      <div class="controls-guide glass">
+        <div class="pixel-font guide-title">CONTROLS</div>
+        <div class="guide-item"><span class="key-cap">W</span><span class="key-cap">A</span><span class="key-cap">S</span><span class="key-cap">D</span> Move</div>
+        <div class="guide-item"><span class="key-cap">Space</span> Action / Talk</div>
+        <div class="guide-item"><span class="key-cap">M</span> Toggle Sound</div>
+      </div>
+      
+      <!-- Audio Synth Indicator -->
+      <div id="audioIndicator" class="audio-indicator glass">
+        <span class="audio-icon">🔊</span> Sound ON
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

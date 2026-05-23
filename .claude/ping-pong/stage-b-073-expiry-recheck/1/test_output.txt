@@ -1,0 +1,49 @@
+    warning: function capabilities/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.TravelClick)
+    │
+  1 │ defmodule Flowstay.CRS.TravelClick do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/flowstay/crs/travel_click.ex:1: Flowstay.CRS.TravelClick (module)
+
+    warning: function metadata/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.TravelClick)
+    │
+  1 │ defmodule Flowstay.CRS.TravelClick do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/flowstay/crs/travel_click.ex:1: Flowstay.CRS.TravelClick (module)
+
+    warning: function capabilities/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.Adapter.Test)
+    │
+  1 │ defmodule Flowstay.CRS.Adapter.Test do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/support/crs_adapter_test_impl.ex:1: Flowstay.CRS.Adapter.Test (module)
+
+    warning: function metadata/0 required by behaviour Flowstay.CRS.Adapter is not implemented (in module Flowstay.CRS.Adapter.Test)
+    │
+  1 │ defmodule Flowstay.CRS.Adapter.Test do
+    │ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ test/support/crs_adapter_test_impl.ex:1: Flowstay.CRS.Adapter.Test (module)
+
+Running ExUnit with seed: 439370, max_cases: 1
+Excluding tags: [:real_models]
+
+     warning: module attribute @impl was not set for function check_availability/1 callback (specified in Flowstay.CRS.Adapter). This either means you forgot to add the "@impl true" annotation before the definition or that you are accidentally overriding this callback
+     │
+ 180 │     def check_availability(_hold) do
+     │     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ test/flowstay/workers/hold_expiry_worker_test.exs:180: Flowstay.Workers.HoldExpiryWorkerTest.TestAdapter (module)
+
+
+Flowstay.Workers.HoldExpiryWorkerTest [test/flowstay/workers/hold_expiry_worker_test.exs]
+  * test perform/1 — defensive no-op paths unknown hold id → no-op [L#98]  * test perform/1 — defensive no-op paths unknown hold id → no-op (37.5ms) [L#98]
+  * test perform/1 — active hold expires (TTL-only path) marks row :expired AND signals :expired to Session [L#64]  * test perform/1 — active hold expires (TTL-only path) marks row :expired AND signals :expired to Session (17.9ms) [L#64]
+  * test §7.3-007 — expiry-recheck branches on adapter capability still_available branch: silently re-holds (row stays :active with bumped expires_at; Session signals :re_held) [L#207]  * test §7.3-007 — expiry-recheck branches on adapter capability still_available branch: silently re-holds (row stays :active with bumped expires_at; Session signals :re_held) (7.2ms) [L#207]
+  * test §7.3-007 — expiry-recheck branches on adapter capability gone branch: marks row :expired AND signals :expired (capability-supported recheck says room is gone) [L#256]  * test §7.3-007 — expiry-recheck branches on adapter capability gone branch: marks row :expired AND signals :expired (capability-supported recheck says room is gone) (6.9ms) [L#256]
+  * test perform/1 — defensive no-op paths released hold → no-op (cancel race winner; row stays released) [L#77]  * test perform/1 — defensive no-op paths released hold → no-op (cancel race winner; row stays released) (5.2ms) [L#77]
+  * test perform/1 — defensive no-op paths already-expired hold → no-op (idempotent) [L#88]  * test perform/1 — defensive no-op paths already-expired hold → no-op (idempotent) (6.3ms) [L#88]
+
+Finished in 0.1 seconds (0.00s async, 0.1s sync)
+6 tests, 0 failures

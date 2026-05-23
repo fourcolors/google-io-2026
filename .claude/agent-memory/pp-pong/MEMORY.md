@@ -1,0 +1,3 @@
+- [FlowStay dispatch router pattern](feedback_flowstay_dispatch_router_pattern.md) — MCPRuntime.dispatch/3 + private route_to_handler/3 clauses; gate input must be LIVE (Allowlist.for_scene/2), not a constant table
+- [Optional callbacks compliance trap](feedback_optional_callbacks_compliance_trap.md) — `@optional_callbacks` doesn't filter from `behaviour_info(:callbacks)`; compliance macros must filter via `behaviour_info(:optional_callbacks)` or they force every adapter to stub optionals
+- [Lead resolution surface gaps](feedback_lead_resolution_surface_gaps.md) — lead's flagged-conflict resolution often forces edits ping couldn't see; run full suite EARLY to discover blast radius, mark DONE_WITH_CONCERNS when scope expands
