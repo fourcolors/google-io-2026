@@ -60,7 +60,7 @@ export class GameEngine {
       this.keys[keyLower] = true;
       
       // Prevent default scrolling for Space and Arrow keys during gameplay
-      if ([' ', 'space', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(keyLower) || e.code === 'Space') {
+      if ([' ', 'space', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'up', 'down', 'left', 'right'].includes(keyLower) || e.code === 'Space') {
         e.preventDefault();
       }
       
@@ -71,9 +71,7 @@ export class GameEngine {
     });
 
     window.addEventListener('keyup', (e) => {
-      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-        return;
-      }
+      // Always register keyup events to prevent keys from getting stuck when focus shifts
       this.keys[e.key.toLowerCase()] = false;
     });
   }
@@ -124,6 +122,7 @@ export class GameEngine {
       if (npc) {
         this.activeNPC = npc;
         this.player.isMoving = false;
+        this.keys = {}; // Clear keys to prevent movement lock when dialogue focuses chat input
         
         // Dispatch dialog event
         this.onEvent('npc_talk', npc);
@@ -165,16 +164,16 @@ export class GameEngine {
       let dx = 0;
       let dy = 0;
 
-      if (this.keys['w'] || this.keys['arrowup']) {
+      if (this.keys['w'] || this.keys['arrowup'] || this.keys['up']) {
         dy = -1;
         p.direction = 'up';
-      } else if (this.keys['s'] || this.keys['arrowdown']) {
+      } else if (this.keys['s'] || this.keys['arrowdown'] || this.keys['down']) {
         dy = 1;
         p.direction = 'down';
-      } else if (this.keys['a'] || this.keys['arrowleft']) {
+      } else if (this.keys['a'] || this.keys['arrowleft'] || this.keys['left']) {
         dx = -1;
         p.direction = 'left';
-      } else if (this.keys['d'] || this.keys['arrowright']) {
+      } else if (this.keys['d'] || this.keys['arrowright'] || this.keys['right']) {
         dx = 1;
         p.direction = 'right';
       }
@@ -251,6 +250,7 @@ export class GameEngine {
   // Close active dialog conversation
   closeDialog() {
     this.activeNPC = null;
+    this.keys = {}; // Clear keys to prevent movement lock when dialogue collapses
     this.onEvent('dialog_close');
   }
 }

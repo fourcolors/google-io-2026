@@ -696,14 +696,13 @@ class GameEngine {
       }
       
       // Prevent default scrolling for Space and Arrow keys during gameplay
-      if ([" ", "space", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(keyLower) || e.code === "Space") {
+      if ([" ", "space", "arrowup", "arrowdown", "arrowleft", "arrowright", "up", "down", "left", "right"].includes(keyLower) || e.code === "Space") {
         e.preventDefault();
       }
       
       if (e.key === " " || e.code === "Space") { this.interact(); }
     });
     window.addEventListener("keyup", (e) => {
-      if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) return;
       const keyLower = (e.key || "").toLowerCase();
       if (keyLower) {
         this.keys[keyLower] = false;
@@ -721,7 +720,7 @@ class GameEngine {
     for (const d of [{x:0,y:-1},{x:0,y:1},{x:-1,y:0},{x:1,y:0}]) {
       const tx=this.player.gridX+d.x, ty=this.player.gridY+d.y, key=tx+","+ty;
       let npc = this.discoveredNPCs[key] || getNPCAt(tx,ty);
-      if (npc) { this.discoveredNPCs[key]=npc; this.activeNPC=npc; this.player.isMoving=false; this.onEvent("npc_talk", npc); break; }
+      if (npc) { this.discoveredNPCs[key]=npc; this.activeNPC=npc; this.player.isMoving=false; this.keys={}; this.onEvent("npc_talk", npc); break; }
     }
   }
   update() { this.handleMovement(); this.updateCamera(); this.discoverNPCsNearby(); }
@@ -731,10 +730,10 @@ class GameEngine {
     if (this.activeNPC) return;
     if (!p.isMoving) {
       let dx=0, dy=0;
-      if (this.keys["w"]||this.keys["arrowup"]) { dy=-1; p.direction="up"; }
-      else if (this.keys["s"]||this.keys["arrowdown"]) { dy=1; p.direction="down"; }
-      else if (this.keys["a"]||this.keys["arrowleft"]) { dx=-1; p.direction="left"; }
-      else if (this.keys["d"]||this.keys["arrowright"]) { dx=1; p.direction="right"; }
+      if (this.keys["w"]||this.keys["arrowup"]||this.keys["up"]) { dy=-1; p.direction="up"; }
+      else if (this.keys["s"]||this.keys["arrowdown"]||this.keys["down"]) { dy=1; p.direction="down"; }
+      else if (this.keys["a"]||this.keys["arrowleft"]||this.keys["left"]) { dx=-1; p.direction="left"; }
+      else if (this.keys["d"]||this.keys["arrowright"]||this.keys["right"]) { dx=1; p.direction="right"; }
       if (dx||dy) { const nx=p.gridX+dx, ny=p.gridY+dy; if (this.isWalkable(nx,ny)){ p.targetGridX=nx; p.targetGridY=ny; p.moveProgress=0; p.isMoving=true; this.onEvent("walk"); } }
     }
   }
@@ -755,7 +754,7 @@ class GameEngine {
     }
   }
   getNPCList() { return Object.values(this.discoveredNPCs); }
-  closeDialog() { this.activeNPC=null; this.onEvent("dialog_close"); }
+  closeDialog() { this.activeNPC=null; this.keys={}; this.onEvent("dialog_close"); }
 }
 
 /* =========================================================================
@@ -1065,10 +1064,67 @@ function tone(type, f0, f1, dur, vol, when = 0) {
 const playWalk = () => tone("triangle", 90, 30, 0.08, 0.05);
 const playBlip = () => tone("square", 500 + Math.random()*200, null, 0.04, 0.02);
 const playFanfare = () => [261.63,329.63,392,523.25].forEach((f,i) => tone("square", f, null, 0.12, 0.04, i*0.07));
+
+// --- Ambient Procedural 8-Bit Background Music ---
+let musicInterval = null, currentMusicStep = 0;
+const musicTempo = 250;
+const adventureTheme = [
+  { note: 220.00, type: "triangle", dur: 0.4 },
+  { note: 261.63, type: "triangle", dur: 0.4 },
+  { note: 329.63, type: "triangle", dur: 0.4 },
+  { note: 392.00, type: "triangle", dur: 0.4 },
+  { note: 440.00, type: "triangle", dur: 0.4 },
+  { note: 329.63, type: "triangle", dur: 0.4 },
+  { note: 261.63, type: "triangle", dur: 0.4 },
+  { note: 329.63, type: "triangle", dur: 0.4 },
+  
+  { note: 174.61, type: "triangle", dur: 0.4 },
+  { note: 261.63, type: "triangle", dur: 0.4 },
+  { note: 329.63, type: "triangle", dur: 0.4 },
+  { note: 349.23, type: "triangle", dur: 0.4 },
+  { note: 440.00, type: "triangle", dur: 0.4 },
+  { note: 329.63, type: "triangle", dur: 0.4 },
+  { note: 261.63, type: "triangle", dur: 0.4 },
+  { note: 329.63, type: "triangle", dur: 0.4 },
+
+  { note: 130.81, type: "triangle", dur: 0.4 },
+  { note: 261.63, type: "triangle", dur: 0.4 },
+  { note: 329.63, type: "triangle", dur: 0.4 },
+  { note: 392.00, type: "triangle", dur: 0.4 },
+  { note: 523.25, type: "triangle", dur: 0.4 },
+  { note: 392.00, type: "triangle", dur: 0.4 },
+  { note: 329.63, type: "triangle", dur: 0.4 },
+  { note: 261.63, type: "triangle", dur: 0.4 },
+
+  { note: 196.00, type: "triangle", dur: 0.4 },
+  { note: 293.66, type: "triangle", dur: 0.4 },
+  { note: 392.00, type: "triangle", dur: 0.4 },
+  { note: 493.88, type: "triangle", dur: 0.4 },
+  { note: 587.33, type: "triangle", dur: 0.4 },
+  { note: 493.88, type: "triangle", dur: 0.4 },
+  { note: 392.00, type: "triangle", dur: 0.4 },
+  { note: 293.66, type: "triangle", dur: 0.4 }
+];
+function playMusicStep() {
+  if (isMuted || !audioCtx) return;
+  initAudio();
+  const step = adventureTheme[currentMusicStep];
+  tone(step.type, step.note, null, step.dur, 0.012);
+  currentMusicStep = (currentMusicStep + 1) % adventureTheme.length;
+}
+function startBackgroundMusic() { if (!musicInterval) { currentMusicStep = 0; musicInterval = setInterval(playMusicStep, musicTempo); } }
+function stopBackgroundMusic() { if (musicInterval) { clearInterval(musicInterval); musicInterval = null; } }
+
 function toggleMute() {
   isMuted = !isMuted;
   ui.audioIndicator.textContent = isMuted ? "🔇 Sound OFF" : "🔊 Sound ON";
-  ui.audioIndicator.classList.toggle("muted", isMuted); if (!isMuted) initAudio();
+  ui.audioIndicator.classList.toggle("muted", isMuted);
+  if (isMuted) {
+    stopBackgroundMusic();
+  } else {
+    initAudio();
+    startBackgroundMusic();
+  }
 }
 ui.audioIndicator.addEventListener("click", toggleMute);
 window.addEventListener("keydown", (e) => { if (e.key.toLowerCase() === "m" && (!document.activeElement || document.activeElement.tagName !== "INPUT")) toggleMute(); });
@@ -1286,6 +1342,7 @@ ui.closeDialogBtn.addEventListener("click", () => { if (engine) engine.closeDial
 // --- Start game ---
 ui.startGameBtn.addEventListener("click", () => {
   initAudio();
+  startBackgroundMusic();
   ui.loaderPanel.classList.add("hidden");
   ui.loreLogPanel.classList.remove("hidden");
   const canvas = document.getElementById("gameCanvas");

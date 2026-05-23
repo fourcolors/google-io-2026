@@ -19,6 +19,91 @@ function initAudio() {
   }
 }
 
+// --- Ambient Procedural 8-Bit Background Music ---
+let musicInterval = null;
+let currentMusicStep = 0;
+const musicTempo = 250; // ms per note (120 BPM eighth notes)
+
+// A beautiful, fantasy arpeggiated adventure theme
+const adventureTheme = [
+  // Am9 chord arpeggio
+  { note: 220.00, type: 'triangle', dur: 0.4 }, // A3
+  { note: 261.63, type: 'triangle', dur: 0.4 }, // C4
+  { note: 329.63, type: 'triangle', dur: 0.4 }, // E4
+  { note: 392.00, type: 'triangle', dur: 0.4 }, // G4
+  { note: 440.00, type: 'triangle', dur: 0.4 }, // A4
+  { note: 329.63, type: 'triangle', dur: 0.4 }, // E4
+  { note: 261.63, type: 'triangle', dur: 0.4 }, // C4
+  { note: 329.63, type: 'triangle', dur: 0.4 }, // E4
+  
+  // Fmaj7 chord arpeggio
+  { note: 174.61, type: 'triangle', dur: 0.4 }, // F3
+  { note: 261.63, type: 'triangle', dur: 0.4 }, // C4
+  { note: 329.63, type: 'triangle', dur: 0.4 }, // E4
+  { note: 349.23, type: 'triangle', dur: 0.4 }, // F4
+  { note: 440.00, type: 'triangle', dur: 0.4 }, // A4
+  { note: 329.63, type: 'triangle', dur: 0.4 }, // E4
+  { note: 261.63, type: 'triangle', dur: 0.4 }, // C4
+  { note: 329.63, type: 'triangle', dur: 0.4 }, // E4
+
+  // Cmaj7 chord arpeggio
+  { note: 130.81, type: 'triangle', dur: 0.4 }, // C3
+  { note: 261.63, type: 'triangle', dur: 0.4 }, // C4
+  { note: 329.63, type: 'triangle', dur: 0.4 }, // E4
+  { note: 392.00, type: 'triangle', dur: 0.4 }, // G4
+  { note: 523.25, type: 'triangle', dur: 0.4 }, // C5
+  { note: 392.00, type: 'triangle', dur: 0.4 }, // G4
+  { note: 329.63, type: 'triangle', dur: 0.4 }, // E4
+  { note: 261.63, type: 'triangle', dur: 0.4 }, // C4
+
+  // G6 chord arpeggio
+  { note: 196.00, type: 'triangle', dur: 0.4 }, // G3
+  { note: 293.66, type: 'triangle', dur: 0.4 }, // D4
+  { note: 392.00, type: 'triangle', dur: 0.4 }, // G4
+  { note: 493.88, type: 'triangle', dur: 0.4 }, // B4
+  { note: 587.33, type: 'triangle', dur: 0.4 }, // D5
+  { note: 493.88, type: 'triangle', dur: 0.4 }, // B4
+  { note: 392.00, type: 'triangle', dur: 0.4 }, // G4
+  { note: 293.66, type: 'triangle', dur: 0.4 }  // D4
+];
+
+function playMusicStep() {
+  if (isMuted || !audioCtx) return;
+  initAudio();
+  
+  const step = adventureTheme[currentMusicStep];
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  
+  osc.type = step.type;
+  osc.frequency.setValueAtTime(step.note, audioCtx.currentTime);
+  
+  // Extremely gentle volume so walking & talk sounds stay prominent
+  gain.gain.setValueAtTime(0.012, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + step.dur);
+  
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  
+  osc.start();
+  osc.stop(audioCtx.currentTime + step.dur);
+  
+  currentMusicStep = (currentMusicStep + 1) % adventureTheme.length;
+}
+
+function startBackgroundMusic() {
+  if (musicInterval) return;
+  currentMusicStep = 0;
+  musicInterval = setInterval(playMusicStep, musicTempo);
+}
+
+function stopBackgroundMusic() {
+  if (musicInterval) {
+    clearInterval(musicInterval);
+    musicInterval = null;
+  }
+}
+
 // 8-Bit Walking Sound
 function playWalkSound() {
   if (isMuted || !audioCtx) return;
@@ -129,15 +214,17 @@ function toggleMute() {
   if (isMuted) {
     ui.audioIndicator.innerHTML = '🔇 Sound OFF';
     ui.audioIndicator.classList.add('muted');
+    stopBackgroundMusic();
   } else {
     initAudio();
     ui.audioIndicator.innerHTML = '🔊 Sound ON';
     ui.audioIndicator.classList.remove('muted');
+    startBackgroundMusic();
   }
 }
 ui.audioIndicator.addEventListener('click', toggleMute);
 window.addEventListener('keydown', (e) => {
-  if (e.key.toLowerCase() === 'm') {
+  if (e.key.toLowerCase() === 'm' && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
     toggleMute();
   }
 });
@@ -473,6 +560,7 @@ function drawNPCPortrait(npc) {
 // --- Start Game Logic ---
 ui.startGameBtn.addEventListener('click', () => {
   initAudio();
+  startBackgroundMusic();
   ui.loaderPanel.classList.add('hidden');
   ui.loreLogPanel.classList.remove('hidden');
   
