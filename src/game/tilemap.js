@@ -146,9 +146,12 @@ export function getNPCAt(x, y) {
   const tile = getTileAt(x, y);
   if (!tile.walkable || tile.id === BIOMES.RUINS.id) return null;
 
+  // Guarantees an NPC spawn right next to the player's starting position (-4,0) for seamless demo-day play
+  const isDemoNpc = (x === -5 && y === 0);
+
   // Hash check for NPC spawning (roughly ~1.5% chance per grid cell)
   const spawnHash = pseudoNoise2D(x, y, SEED + 999);
-  if (spawnHash > 0.985) {
+  if (spawnHash > 0.985 || isDemoNpc) {
     // Determine details via coord hash
     const nameIndex = Math.floor(pseudoNoise2D(x, y, SEED + 1) * NPC_NAMES.length);
     const titleIndex = Math.floor(pseudoNoise2D(x, y, SEED + 2) * NPC_TITLES.length);

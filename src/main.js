@@ -313,6 +313,10 @@ function initiateNPCDialogue(npc) {
 
     let isFirstToken = true;
 
+    ui.chatInput.disabled = true;
+    ui.chatInput.placeholder = `Summoning ${npc.name}'s thoughts...`;
+    ui.sendChatBtn.disabled = true;
+
     activeEngine.generate(system, prompt, 40, 0.7, (token) => {
       if (isFirstToken) {
         bubble.classList.remove('thinking');
@@ -330,7 +334,9 @@ function initiateNPCDialogue(npc) {
       ui.statusDot.className = 'indicator-dot active';
       ui.statusText.innerText = 'AI Ready';
       ui.chatInput.disabled = false;
+      ui.chatInput.placeholder = "Ask the NPC anything...";
       ui.sendChatBtn.disabled = false;
+      ui.chatInput.focus();
       
       activeNPCHistory.push({ role: 'assistant', content: fullText });
     }).catch((err) => {
@@ -338,6 +344,10 @@ function initiateNPCDialogue(npc) {
       bubble.classList.remove('thinking');
       ui.statusDot.className = 'indicator-dot active';
       ui.statusText.innerText = 'AI Ready';
+      ui.chatInput.disabled = false;
+      ui.chatInput.placeholder = "Ask the NPC anything...";
+      ui.sendChatBtn.disabled = false;
+      ui.chatInput.focus();
       document.getElementById('npcDialogueText').innerText = `Greetings, traveler. I am ${npc.name}, the ${npc.title}. I seek relics in this grid.`;
     });
   } else {
@@ -357,6 +367,7 @@ ui.chatForm.addEventListener('submit', (e) => {
 
   ui.chatInput.value = '';
   ui.chatInput.disabled = true;
+  ui.chatInput.placeholder = `${engine.activeNPC.name} is thinking...`;
   ui.sendChatBtn.disabled = true;
 
   // Add player message bubble
@@ -410,6 +421,7 @@ ui.chatForm.addEventListener('submit', (e) => {
     ui.statusDot.className = 'indicator-dot active';
     ui.statusText.innerText = 'AI Ready';
     ui.chatInput.disabled = false;
+    ui.chatInput.placeholder = 'Ask the NPC anything...';
     ui.sendChatBtn.disabled = false;
     ui.chatInput.focus();
     
@@ -421,7 +433,9 @@ ui.chatForm.addEventListener('submit', (e) => {
     ui.statusDot.className = 'indicator-dot active';
     ui.statusText.innerText = 'AI Ready';
     ui.chatInput.disabled = false;
+    ui.chatInput.placeholder = 'Ask the NPC anything...';
     ui.sendChatBtn.disabled = false;
+    ui.chatInput.focus();
     document.getElementById('npcDialogueText').innerText = `Forgive me, my mind wanders. The energies of this place block my thoughts...`;
   });
 });

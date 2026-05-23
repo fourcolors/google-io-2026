@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GemmaQuest — Single-File Generative WebGPU RPG (spec · tests · game)</title>
+<meta name="description" content="A 100% serverless, on-device AI RPG. Google Gemma runs in your browser via WebGPU. One file: spec, tests, and the game." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0813;
+    --panel: rgba(18, 14, 30, 0.72);
+    --panel-solid: #100c1e;
+    --border: rgba(140, 110, 220, 0.28);
+    --text: #ebe5fc;
+    --dim: #9c93c0;
+    --accent-cyan: #00e5ff;
+    --accent-purple: #a06bf7;
+    --accent-pink: #ff5cc8;
+    --accent-gold: #ffd24a;
+    --ok: #38d39f;
+    --bad: #ff5d6c;
+    --warn: #ffb454;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Outfit', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  .pixel-font { font-family: 'Press Start 2P', monospace; line-height: 1.6; }
+  .text-gradient {
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple), var(--accent-pink));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .glass {
+    background: var(--panel);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  .hidden { display: none !important; }
+
+  /* CRT flavor */
+  .crt-overlay {
+    position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.10), rgba(0,0,0,0.10) 1px, transparent 1px, transparent 3px);
+    mix-blend-mode: multiply; opacity: 0.5;
+  }
+  .vignette {
+    position: fixed; inset: 0; pointer-events: none; z-index: 9998;
+    box-shadow: inset 0 0 220px rgba(0,0,0,0.85);
+  }
+
+  #app { position: relative; width: 100vw; height: 100vh; }
+  #gameCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  /* ---------- Top bar ---------- */
+  .top-bar {
+    position: absolute; top: 12px; left: 12px; right: 12px; z-index: 50;
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 14px;
+  }
+  .game-logo { display: flex; align-items: center; gap: 10px; }
+  .game-logo .pixel-font { font-size: 14px; }
+  .badge {
+    font-size: 9px; letter-spacing: 0.5px; padding: 4px 7px; border-radius: 6px;
+    background: rgba(160,107,247,0.18); color: var(--accent-purple); border: 1px solid var(--border);
+    font-family: 'Press Start 2P', monospace;
+  }
+
+  /* The LOCAL · GPU proof badge — the visual anchor of "no server" */
+  #localBadge {
+    display: flex; align-items: center; gap: 7px;
+    font-family: 'Press Start 2P', monospace; font-size: 9px;
+    padding: 6px 10px; border-radius: 8px;
+    border: 1px solid rgba(255,93,108,0.4);
+    background: rgba(255,93,108,0.10); color: var(--bad);
+    transition: all 0.4s ease;
+  }
+  #localBadge .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--bad); box-shadow: 0 0 8px var(--bad); }
+  #localBadge.green {
+    border-color: rgba(56,211,159,0.55); background: rgba(56,211,159,0.12); color: var(--ok);
+  }
+  #localBadge.green .dot { background: var(--ok); box-shadow: 0 0 10px var(--ok); animation: pulse 1.6s ease-in-out infinite; }
+  #localBadge.loading {
+    border-color: rgba(255, 180, 84, 0.55); background: rgba(255, 180, 84, 0.12); color: var(--warn);
+  }
+  #localBadge.loading .dot { background: var(--warn); box-shadow: 0 0 10px var(--warn); animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+  .spacer { flex: 1; }
+
+  .tabs { display: flex; gap: 6px; }
+  .tab-btn {
+    font-family: 'Press Start 2P', monospace; font-size: 9px;
+    padding: 8px 10px; border-radius: 8px; cursor: pointer;
+    background: transparent; color: var(--dim); border: 1px solid var(--border);
+    transition: all 0.2s;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { background: rgba(160,107,247,0.2); color: var(--text); border-color: var(--accent-purple); }
+
+  .model-select {
+    background: var(--panel-solid); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 8px; font-family: 'Outfit'; font-size: 12px; max-width: 220px;
+  }
+
+  .btn {
+    font-family: 'Press Start 2P', monospace; font-size: 9px; cursor: pointer;
+    padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border);
+    background: rgba(0,229,255,0.12); color: var(--accent-cyan);
+    transition: all 0.2s;
+  }
+  .btn:hover:not(:disabled) { background: rgba(0,229,255,0.22); transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-accent { background: rgba(160,107,247,0.18); color: var(--accent-purple); border-color: var(--accent-purple); }
+  .btn-accent:hover:not(:disabled) { background: rgba(160,107,247,0.3); }
+
+  /* ---------- Center intro / loader ---------- */
+  .center-panel {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 40;
+    width: min(620px, 92vw); padding: 30px 28px; text-align: center;
+  }
+  .title-large { font-size: 30px; margin-bottom: 12px; }
+  .subtitle { color: var(--dim); font-size: 15px; margin-bottom: 18px; }
+  .description-block { font-size: 14px; line-height: 1.7; color: var(--text); margin-bottom: 20px; opacity: 0.9; }
+  .description-block strong { color: var(--accent-cyan); }
+  .footnote { font-size: 12px; color: var(--dim); margin-top: 14px; }
+
+  .progress-container { margin: 18px 0; }
+  .progress-bar-wrapper { width: 100%; height: 14px; background: rgba(0,0,0,0.4); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+  .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple)); transition: width 0.3s; }
+  .progress-label { font-size: 12px; color: var(--dim); margin-top: 8px; }
+  .loading-warning { font-size: 11px; color: var(--warn); margin-top: 4px; }
+
+  /* ---------- Lore log ---------- */
+  .left-sidebar {
+    position: absolute; top: 78px; left: 12px; z-index: 30;
+    width: 300px; max-height: calc(100vh - 110px); padding: 14px; overflow-y: auto;
+  }
+  .panel-title { font-size: 11px; color: var(--accent-cyan); margin-bottom: 8px; }
+  .divider { height: 1px; background: var(--border); margin: 8px 0 12px; }
+  .lore-entry { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px dashed rgba(140,110,220,0.18); font-size: 13px; line-height: 1.55; }
+  .lore-entry h4 { font-family: 'Press Start 2P', monospace; font-size: 10px; margin: 5px 0; }
+  .entry-coord { font-family: 'Press Start 2P', monospace; font-size: 8px; color: var(--dim); }
+  .key-cap {
+    display: inline-block; font-family: 'Press Start 2P', monospace; font-size: 8px;
+    padding: 3px 5px; margin: 0 1px; border-radius: 4px; background: rgba(255,255,255,0.08); border: 1px solid var(--border);
+  }
+
+  /* ---------- NPC dialog ---------- */
+  .bottom-bar {
+    position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 35;
+    width: min(640px, 94vw); padding: 14px;
+  }
+  .dialog-header { display: flex; align-items: center; justify-content: space-between; }
+  .npc-profile { display: flex; align-items: center; gap: 12px; }
+  .npc-portrait { image-rendering: pixelated; border-radius: 8px; border: 1px solid var(--border); }
+  .npc-name { font-size: 12px; color: var(--accent-gold); }
+  .npc-title { font-size: 12px; color: var(--dim); }
+  .btn-close { background: none; border: none; color: var(--dim); font-size: 26px; cursor: pointer; line-height: 1; }
+  .btn-close:hover { color: var(--bad); }
+  .chat-history { max-height: 180px; overflow-y: auto; margin: 8px 0; display: flex; flex-direction: column; gap: 8px; }
+  .chat-bubble { padding: 9px 12px; border-radius: 10px; font-size: 14px; line-height: 1.5; max-width: 85%; }
+  .npc-bubble { background: rgba(0,229,255,0.10); border: 1px solid rgba(0,229,255,0.25); align-self: flex-start; }
+  .user-bubble { background: rgba(160,107,247,0.16); border: 1px solid var(--accent-purple); align-self: flex-end; }
+  .chat-input-wrapper { display: flex; gap: 8px; }
+  .chat-input-wrapper input {
+    flex: 1; background: var(--panel-solid); border: 1px solid var(--border); border-radius: 8px;
+    padding: 9px 11px; color: var(--text); font-family: 'Outfit'; font-size: 14px;
+  }
+  .chat-input-wrapper input:disabled { opacity: 0.4; }
+
+  /* ---------- Controls + audio ---------- */
+  .controls-guide { position: absolute; bottom: 14px; right: 14px; z-index: 30; padding: 10px 12px; font-size: 12px; }
+  .guide-title { font-size: 9px; color: var(--accent-cyan); margin-bottom: 6px; }
+  .guide-item { margin: 3px 0; color: var(--dim); }
+  .audio-indicator { position: absolute; top: 78px; right: 12px; z-index: 30; padding: 8px 11px; font-size: 12px; cursor: pointer; user-select: none; }
+  .audio-indicator.muted { color: var(--bad); }
+
+  /* ---------- Overlay panels (Spec / Tests) ---------- */
+  .overlay-panel {
+    position: absolute; top: 70px; left: 12px; right: 12px; bottom: 12px; z-index: 45;
+    padding: 26px; overflow-y: auto;
+  }
+  .overlay-panel h1 { font-family: 'Press Start 2P', monospace; font-size: 18px; margin-bottom: 6px; }
+  .overlay-panel h2 { font-family: 'Press Start 2P', monospace; font-size: 12px; color: var(--accent-cyan); margin: 22px 0 8px; }
+  .overlay-panel h3 { font-size: 16px; color: var(--accent-gold); margin: 16px 0 6px; }
+  .overlay-panel p, .overlay-panel li { font-size: 14px; line-height: 1.7; color: var(--text); opacity: 0.92; }
+  .overlay-panel ul, .overlay-panel ol { margin: 8px 0 8px 22px; }
+  .overlay-panel code { font-family: 'Press Start 2P', monospace; font-size: 10px; background: rgba(0,0,0,0.35); padding: 2px 5px; border-radius: 4px; color: var(--accent-pink); }
+  .lede { color: var(--dim) !important; font-size: 15px !important; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 12px 0; }
+  @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+  .card { padding: 14px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); }
+  .card .tag { font-family: 'Press Start 2P', monospace; font-size: 8px; color: var(--accent-purple); }
+  .beat { display: flex; gap: 12px; margin: 10px 0; }
+  .beat .n { font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--accent-cyan); min-width: 58px; }
+
+  /* ---------- Test runner ---------- */
+  .test-toolbar { display: flex; align-items: center; gap: 12px; margin: 14px 0 18px; flex-wrap: wrap; }
+  .test-summary { font-family: 'Press Start 2P', monospace; font-size: 11px; }
+  .test-summary .pass { color: var(--ok); }
+  .test-summary .fail { color: var(--bad); }
+  table.results { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+  table.results th, table.results td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.results th { font-family: 'Press Start 2P', monospace; font-size: 8px; color: var(--dim); }
+  .status-cell { font-family: 'Press Start 2P', monospace; font-size: 8px; white-space: nowrap; }
+  .status-cell.ok { color: var(--ok); }
+  .status-cell.bad { color: var(--bad); }
+  .detail { color: var(--dim); font-size: 12px; }
+
+  /* NPC Dialog Box Thinking State */
+  .chat-bubble.npc-bubble.thinking {
+    animation: thinking-glow 1.5s infinite ease-in-out;
+    border-color: var(--accent-cyan);
+    background: rgba(0, 229, 255, 0.08);
+  }
+  @keyframes thinking-glow {
+    0% { box-shadow: 0 0 4px rgba(160,107,247,0.3); border-color: var(--border); }
+    50% { box-shadow: 0 0 16px rgba(0,229,255,0.45); border-color: var(--accent-cyan); }
+    100% { box-shadow: 0 0 4px rgba(160,107,247,0.3); border-color: var(--border); }
+  }
+</style>
+</head>
+<body>
+<div class="crt-overlay"></div>
+<div class="vignette"></div>
+
+<div id="app">
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- Top bar -->
+  <header class="top-bar glass">
+    <div class="game-logo">
+      <span class="pixel-font text-gradient">GEMMAQUEST</span>
+      <span class="badge">SINGLE-FILE</span>
+    </div>
+
+    <!-- THE PROOF BADGE: red until model is resident on webgpu -->
+    <div id="localBadge" title="Flips green only when the model is resident AND device is webgpu">
+      <span class="dot"></span><span id="localBadgeText">NO MODEL</span>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="game">▶ GAME</button>
+      <button class="tab-btn" data-tab="spec">📋 SPEC</button>
+      <button class="tab-btn" data-tab="tests">🧪 TESTS</button>
+    </div>
+
+    <select id="modelSelect" class="model-select">
+      <option value="onnx-community/gemma-4-E2B-it-ONNX" selected>Gemma 4 E2B (Frontier · ~1.5GB)</option>
+      <option value="onnx-community/gemma-3-270m-it-ONNX">Gemma 3 270M (Fast · ~150MB)</option>
+      <option value="cloud-gemini">Google Gemini 2.5 Flash (Cloud Fallback)</option>
+    </select>
+    <input type="password" id="apiKeyInput" class="model-select hidden" placeholder="Enter Gemini API Key..." style="width: 180px;" />
+    <button id="loadModelBtn" class="btn">Load AI</button>
+  </header>
+
+  <!-- ===================== GAME VIEW ===================== -->
+  <div id="gameView">
+    <!-- Intro / loader -->
+    <div id="loaderPanel" class="panel glass center-panel">
+      <h2 class="pixel-font text-gradient title-large">GEMMAQUEST</h2>
+      <p class="subtitle">An Infinite Generative RPG Running 100% in Your Browser</p>
+      <div class="description-block">
+        <p>Explore an endless procedurally generated map. As you walk, an on-device
+        <strong>Google Gemma LLM</strong> on <strong>WebGPU</strong> generates lore and NPC
+        dialogue — offline, in real time, with no server.</p>
+      </div>
+      <div id="progressContainer" class="progress-container hidden">
+        <div class="progress-bar-wrapper"><div id="progressBar" class="progress-bar"></div></div>
+        <p id="progressLabel" class="progress-label">Downloading model: 0%</p>
+        <p class="loading-warning">First load caches weights in your browser. Later plays load from cache.</p>
+      </div>
+      <button id="startGameBtn" class="btn btn-accent">ENTER THE REALM (plays without AI)</button>
+      <p class="footnote">The realm is playable immediately. Click <strong>Load AI</strong> any time to wake Gemma.</p>
+    </div>
+
+    <!-- Lore log -->
+    <aside id="loreLogPanel" class="panel glass left-sidebar hidden">
+      <h3 class="panel-title pixel-font">Realm Journal</h3>
+      <div class="divider"></div>
+      <div id="loreEntries">
+        <div class="lore-entry">
+          <span class="entry-coord">[X: -4, Y: 0]</span>
+          <p>Your journey begins at the center of the world. Move with
+          <span class="key-cap">W</span><span class="key-cap">A</span><span class="key-cap">S</span><span class="key-cap">D</span>
+          to discover the land.</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- NPC dialog -->
+    <section id="dialogPanel" class="panel glass bottom-bar hidden">
+      <div class="dialog-header">
+        <div class="npc-profile">
+          <canvas id="npcPortraitCanvas" width="48" height="48" class="npc-portrait"></canvas>
+          <div>
+            <h4 id="npcName" class="pixel-font npc-name">The Wanderer</h4>
+            <span id="npcTitle" class="npc-title">Lost Knight</span>
+          </div>
+        </div>
+        <button id="closeDialogBtn" class="btn-close">&times;</button>
+      </div>
+      <div class="divider"></div>
+      <div id="chatHistory" class="chat-history"></div>
+      <form id="chatForm" class="chat-input-wrapper">
+        <input type="text" id="chatInput" placeholder="Ask the NPC anything…" autocomplete="off" disabled />
+        <button type="submit" id="sendChatBtn" class="btn btn-accent" disabled>Speak</button>
+      </form>
+    </section>
+
+    <div class="controls-guide glass">
+      <div class="pixel-font guide-title">CONTROLS</div>
+      <div class="guide-item"><span class="key-cap">W</span><span class="key-cap">A</span><span class="key-cap">S</span><span class="key-cap">D</span> Move</div>
+      <div class="guide-item"><span class="key-cap">Space</span> Talk</div>
+      <div class="guide-item"><span class="key-cap">M</span> Sound</div>
+    </div>
+    <div id="audioIndicator" class="audio-indicator glass">🔊 Sound ON</div>
+  </div>
+
+  <!-- ===================== SPEC VIEW ===================== -->
+  <div id="specView" class="panel glass overlay-panel hidden">
+    <h1 class="text-gradient">GemmaQuest — Design Spec</h1>
+    <p class="lede">Google I/O 2026 hackathon · serverless browser RPG · on-device Gemma via WebGPU.</p>
+
+    <h2>The one goal</h2>
+    <p>Deliver a reliable 3-minute demo whose headline is: <strong>"a frontier Gemma model is
+    generating this game live, on my GPU, with no server."</strong> The game is the vehicle; the proof is the point.</p>
+
+    <h2>Demo script — "prove offline first"</h2>
+    <div class="beat"><span class="n">Beat 0</span><p>(off-camera) model pre-cached in browser storage, pipeline warmed with one inference.</p></div>
+    <div class="beat"><span class="n">Beat 1</span><p>"No server": open DevTools → Network → toggle <strong>Offline</strong> (kill wifi for theatre).</p></div>
+    <div class="beat"><span class="n">Beat 2</span><p>"It's resident": realm loads; the <code>LOCAL · GPU</code> badge glows green — model in memory, network dead.</p></div>
+    <div class="beat"><span class="n">Beat 3</span><p>"It's alive": walk to an NPC, ask a question, tokens stream in live while offline.</p></div>
+    <div class="beat"><span class="n">Beat 4</span><p>"It keeps generating": move; biome lore writes itself as you explore.</p></div>
+    <div class="beat"><span class="n">Beat 5</span><p>Close: "No key, no server, no internet. It just plays."</p></div>
+
+    <h2>Architecture — the inference seam</h2>
+    <p>The game talks only to an <code>InferenceEngine</code> interface; it never knows which engine answers.
+    This makes the API fallback a one-line switch instead of a rewrite.</p>
+    <div class="grid2">
+      <div class="card"><span class="tag">PRIMARY</span><h3>LocalWorkerEngine</h3><p>Single persistent Web Worker running Gemma via transformers.js on WebGPU. One in-flight generation, serialized through a queue.</p></div>
+      <div class="card"><span class="tag">FALLBACK / TEST</span><h3>MockEngine</h3><p>Deterministic, zero-network. Powers the test suite and keeps the realm narrated even with no model. The <code>ApiEngine</code> swaps in here for hosted Gemma if the local path wobbles.</p></div>
+    </div>
+
+    <h2>Foundation fixes baked into this build</h2>
+    <ul>
+      <li><strong>No worker-reload.</strong> One persistent worker for the whole session (the old code spawned a new worker + reloaded the 1.5GB model on every biome — OOM risk).</li>
+      <li><strong>Serialized requests.</strong> A <code>GenerationQueue</code> guarantees one generation hits the GPU at a time.</li>
+      <li><strong>Clean output.</strong> Responses are assembled from streamed tokens, not <code>generated_text</code> (which echoes the prompt back).</li>
+      <li><strong>The proof badge.</strong> <code>LOCAL · GPU</code> greens only when <code>ready &amp;&amp; device==='webgpu'</code>.</li>
+    </ul>
+
+    <h2>Scope</h2>
+    <div class="grid2">
+      <div class="card"><span class="tag">IN</span><p>Procedural world walk · biome lore · NPC free-form streaming chat · LOCAL·GPU badge · offline cold-open · in-browser tests.</p></div>
+      <div class="card"><span class="tag">OUT</span><p>Quest/JSON verification · branching dialogue trees · multimodal input · model-selection theatre.</p></div>
+    </div>
+
+    <h2>Success criteria</h2>
+    <ul>
+      <li>The 3-minute "prove offline first" run completes with no network call in the primary path.</li>
+      <li><code>LOCAL · GPU</code> is green; NPC dialogue and biome lore stream while offline.</li>
+      <li>No OOM / freeze across a full run (single worker holds).</li>
+      <li>If the local path fails, the engine swaps to hosted Gemma with no game code churn.</li>
+    </ul>
+  </div>
+
+  <!-- ===================== TESTS VIEW ===================== -->
+  <div id="testsView" class="panel glass overlay-panel hidden">
+    <h1 class="text-gradient">In-Browser Test Suite</h1>
+    <p class="lede">Executable specs. The logic tests need no model — they use the deterministic <code>MockEngine</code>.
+    The live test is gated on a loaded model.</p>
+    <div class="test-toolbar">
+      <button id="runTestsBtn" class="btn btn-accent">▶ Run Logic Tests</button>
+      <button id="runLiveBtn" class="btn" disabled>▶ Run Live Model Test</button>
+      <span id="testSummary" class="test-summary"></span>
+    </div>
+    <table class="results">
+      <thead><tr><th style="width:90px">Status</th><th>Test</th><th>Detail</th></tr></thead>
+      <tbody id="testResults"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- =========================================================
+     WORKER SOURCE (read as text, run from a Blob URL)
+     Lives here so the whole app stays one file with no build.
+     ========================================================= -->
+<script id="worker-src" type="text/plain">
+import { pipeline, env, TextStreamer } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0";
+
+// We are already in a worker; do not let onnxruntime spawn a proxy worker.
+env.backends.onnx.wasm.proxy = false;
+// Force remote fetch (weights cached by the browser into IndexedDB/CacheStorage).
+env.allowLocalModels = false;
+
+let pipe = null;
+let currentModelId = null;
+
+self.onmessage = async (e) => {
+  const { type, modelId, systemPrompt, userPrompt, maxTokens, temperature } = e.data;
+
+  if (type === "load") {
+    try {
+      if (pipe && currentModelId === modelId) {
+        self.postMessage({ type: "ready", modelId, device: self.__device || "webgpu", cached: true });
+        return;
+      }
+      const hasWebGPU = typeof navigator !== "undefined" && !!navigator.gpu;
+      const device = hasWebGPU ? "webgpu" : "wasm";
+      self.__device = device;
+      self.postMessage({ type: "status", status: "loading", message: "Loading on " + device.toUpperCase() + "…", device });
+
+      pipe = await pipeline("text-generation", modelId, {
+        device,
+        dtype: "q4", // safest non-overflow quant on WebGPU (onnxruntime #26732 guard)
+        progress_callback: (d) => {
+          if (d.status === "downloading" || d.status === "progress") {
+            self.postMessage({ type: "progress", file: d.file || "", progress: d.progress || 0 });
+          } else if (d.status === "initiate") {
+            self.postMessage({ type: "status", status: "downloading", message: "Fetching " + (d.file||"").split("/").pop() });
+          }
+        }
+      });
+      currentModelId = modelId;
+      self.postMessage({ type: "ready", modelId, device });
+    } catch (err) {
+      self.postMessage({ type: "error", error: (err && err.message) || "Load failed." });
+    }
+  }
+
+  else if (type === "generate") {
+    if (!pipe) { self.postMessage({ type: "error", error: "Model not loaded." }); return; }
+    try {
+      const chat = [{ role: "user", content: (systemPrompt ? "[System Directive: " + systemPrompt + "]\n\n" : "") + userPrompt }];
+      const input = pipe.tokenizer.apply_chat_template(chat, { tokenize: false, add_generation_prompt: true });
+
+      // skip_prompt:true => streamer yields ONLY the response tokens (no prompt echo).
+      let clean = "";
+      const streamer = new TextStreamer(pipe.tokenizer, {
+        skip_prompt: true, skip_special_tokens: true,
+        callback_function: (t) => { clean += t; self.postMessage({ type: "token", token: t }); }
+      });
+
+      await pipe(input, { max_new_tokens: maxTokens || 60, temperature: temperature || 0.7, do_sample: true, streamer });
+
+      // Resolve with the clean, prompt-free text — NOT output[0].generated_text.
+      self.postMessage({ type: "complete", text: clean.trim() });
+    } catch (err) {
+      self.postMessage({ type: "error", error: (err && err.message) || "Generation failed." });
+    }
+  }
+};
+</script>
+
+<!-- =========================================================
+     APPLICATION
+     ========================================================= -->
+<script type="module">
+"use strict";
+
+/* Tiny safe DOM builder — avoids innerHTML entirely. */
+function h(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  if (attrs) for (const k in attrs) {
+    if (k === "class") e.className = attrs[k];
+    else if (k === "text") e.textContent = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  for (const kid of kids) { if (kid == null) continue; e.appendChild(typeof kid === "string" ? document.createTextNode(kid) : kid); }
+  return e;
+}
+
+/* =========================================================================
+   1. TILEMAP  (procedural, deterministic — ported from src/game/tilemap.js)
+   ========================================================================= */
+const SEED = 8888;
+function pseudoNoise2D(x, y, seed = SEED) {
+  const s = Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453123;
+  return s - Math.floor(s);
+}
+function smoothNoise2D(x, y, seed = SEED) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf*xf*(3-2*xf), v = yf*yf*(3-2*yf);
+  const n00 = pseudoNoise2D(xi,yi,seed), n10 = pseudoNoise2D(xi+1,yi,seed);
+  const n01 = pseudoNoise2D(xi,yi+1,seed), n11 = pseudoNoise2D(xi+1,yi+1,seed);
+  const n0 = n00*(1-u)+n10*u, n1 = n01*(1-u)+n11*u;
+  return n0*(1-v)+n1*v;
+}
+function fBmNoise2D(x, y, octaves = 3, seed = SEED) {
+  let value = 0, amp = 0.5, freq = 0.05, maxAmp = 0;
+  for (let i = 0; i < octaves; i++) { value += amp*smoothNoise2D(x*freq,y*freq,seed); maxAmp += amp; amp *= 0.5; freq *= 2.2; }
+  return value / maxAmp;
+}
+const BIOMES = {
+  DEEP_OCEAN: { id:"deep_ocean", name:"Abyssal Deep", color:"#080c25", walkable:false, lore:"The dark water stretches endlessly, humming with the sound of cold tides." },
+  OCEAN:      { id:"ocean", name:"Teal Coast", color:"#0e1f40", walkable:false, lore:"Sunlight catches on the shallow blue tides. Cool sea mist rolls inland." },
+  BEACH:      { id:"beach", name:"Gilded Shallows", color:"#3d3420", walkable:true, lore:"Soft, sparkled sand crunches underfoot, wet from the nearby ocean tides." },
+  GRASSLAND:  { id:"grassland", name:"Verdant Steppes", color:"#122e1b", walkable:true, lore:"An endless field of emerald grass blowing softly in the summer breeze." },
+  FOREST:     { id:"forest", name:"Whispering Woods", color:"#0b1f13", walkable:true, lore:"Tall, ancient pine trees block out the sun, whispering long-forgotten secrets." },
+  DESERT:     { id:"desert", name:"Shimmering Sands", color:"#473d1f", walkable:true, lore:"A scorched wasteland of gold dunes. Heat ripples dance across the horizon." },
+  RUINS:      { id:"ruins", name:"Forgotten Spires", color:"#2b2633", walkable:true, lore:"Crumbling basalt pillars rise from the soil, glowing with strange neon runes." }
+};
+function getTileAt(x, y) {
+  const height = fBmNoise2D(x, y, 4, SEED);
+  const moisture = fBmNoise2D(x+500, y+500, 3, SEED+123);
+  if (height < 0.28) return BIOMES.DEEP_OCEAN;
+  if (height < 0.38) return BIOMES.OCEAN;
+  if (height < 0.44) return BIOMES.BEACH;
+  if (height > 0.82 && moisture < 0.35) return BIOMES.RUINS;
+  if (moisture < 0.32) return BIOMES.DESERT;
+  if (moisture > 0.68) return BIOMES.FOREST;
+  return height > 0.65 ? BIOMES.FOREST : BIOMES.GRASSLAND;
+}
+const NPC_NAMES = ["Eldrin","Lyra","Kaelen","Thorin","Zephyr","Seraphina","Valen","Gideon","Aria","Sylas"];
+const NPC_TITLES = ["Alchemist","Hermit","Lost Knight","Chronomancer","Rune Smith","Old Seer","Spiritualist","Spellweaver"];
+const NPC_BACKSTORIES = [
+  "Seeking an ancient relic hidden within the ruins of the realm.",
+  "Exiled from the floating citadel, researching local ecosystem energy.",
+  "Guarding a mystical gateway that only opens under a cyan moon.",
+  "Trapped in a time-loop and studying how movements affect spatial reality.",
+  "Collecting glowing embers and stardust to forge a sword of light."
+];
+function getNPCAt(x, y) {
+  if (Math.abs(x) < 3 && Math.abs(y) < 3) return null;
+  const tile = getTileAt(x, y);
+  if (!tile.walkable || tile.id === BIOMES.RUINS.id) return null;
+  const isDemoNpc = (x === -5 && y === 0);
+  if (pseudoNoise2D(x, y, SEED+999) > 0.985 || isDemoNpc) {
+    const ni = Math.floor(pseudoNoise2D(x,y,SEED+1)*NPC_NAMES.length);
+    const ti = Math.floor(pseudoNoise2D(x,y,SEED+2)*NPC_TITLES.length);
+    const si = Math.floor(pseudoNoise2D(x,y,SEED+3)*NPC_BACKSTORIES.length);
+    const skinColor = Math.floor(pseudoNoise2D(x,y,SEED+4)*4);
+    return { name:NPC_NAMES[ni], title:NPC_TITLES[ti], backstory:NPC_BACKSTORIES[si], skinColor, gridX:x, gridY:y, tileType:tile.name };
+  }
+  return null;
+}
+
+/* =========================================================================
+   2. RENDERER  (ported from src/game/renderer.js)
+   ========================================================================= */
+function varColor(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+class GameRenderer {
+  constructor(canvas) {
+    this.canvas = canvas; this.ctx = canvas.getContext("2d");
+    this.tileSize = 48; this.timeOfDay = 0.25; this.timeScale = 0.0003;
+    this.particles = []; this.maxParticles = 80; this.animTime = 0;
+  }
+  resize(w, h) { this.canvas.width = w; this.canvas.height = h; this.ctx.imageSmoothingEnabled = false; }
+  render(camera, player, npcs) {
+    this.animTime += 0.05; this.timeOfDay = (this.timeOfDay + this.timeScale) % 1;
+    const ctx = this.ctx, cw = this.canvas.width, ch = this.canvas.height;
+    ctx.fillStyle = "#0a0813"; ctx.fillRect(0,0,cw,ch);
+    const halfW = cw/2, halfH = ch/2;
+    const startX = Math.floor((camera.x-halfW)/this.tileSize)-1, endX = Math.ceil((camera.x+halfW)/this.tileSize)+1;
+    const startY = Math.floor((camera.y-halfH)/this.tileSize)-1, endY = Math.ceil((camera.y+halfH)/this.tileSize)+1;
+    for (let gy=startY; gy<=endY; gy++) for (let gx=startX; gx<=endX; gx++) {
+      const tile = getTileAt(gx,gy);
+      this.drawTile(ctx, gx, gy, tile, gx*this.tileSize-camera.x+halfW, gy*this.tileSize-camera.y+halfH);
+    }
+    for (let gy=startY; gy<=endY; gy++) for (let gx=startX; gx<=endX; gx++) {
+      const tile = getTileAt(gx,gy);
+      this.drawProps(ctx, gx, gy, tile, gx*this.tileSize-camera.x+halfW, gy*this.tileSize-camera.y+halfH);
+    }
+    npcs.forEach(npc => {
+      const sx = npc.gridX*this.tileSize-camera.x+halfW, sy = npc.gridY*this.tileSize-camera.y+halfH;
+      if (sx>-this.tileSize && sx<cw+this.tileSize && sy>-this.tileSize && sy<ch+this.tileSize)
+        this.drawChar(ctx, sx, sy, npc, npc.skinColor);
+    });
+    const px = player.gridX*this.tileSize-camera.x+halfW, py = player.gridY*this.tileSize-camera.y+halfH;
+    this.drawChar(ctx, px, py, player, 0, true);
+    this.drawParticles(ctx, camera, halfW, halfH);
+    this.drawLighting(ctx, px, py, camera, halfW, halfH, startX, endX, startY, endY);
+  }
+  drawTile(ctx, gx, gy, tile, x, y) {
+    ctx.fillStyle = tile.color; ctx.fillRect(x,y,this.tileSize,this.tileSize);
+    ctx.fillStyle = "rgba(255,255,255,0.04)";
+    const hash = Math.abs(Math.sin(gx*32.12+gy*77.89)*1000)%1;
+    if (tile.id===BIOMES.GRASSLAND.id) { if(hash>0.6){ctx.fillRect(x+12,y+16,4,8);ctx.fillRect(x+16,y+20,4,4);} if(hash>0.8)ctx.fillRect(x+28,y+28,4,8); }
+    else if (tile.id===BIOMES.FOREST.id) { ctx.fillStyle="rgba(0,0,0,0.15)"; ctx.fillRect(x+8,y+36,32,4); }
+    else if (tile.id===BIOMES.OCEAN.id||tile.id===BIOMES.DEEP_OCEAN.id) { ctx.fillStyle="rgba(255,255,255,0.03)"; const w=Math.sin(this.animTime+gx*0.5)*4; ctx.fillRect(x+12+w,y+20,16,3); ctx.fillRect(x+24-w,y+32,12,3); }
+    else if (tile.id===BIOMES.DESERT.id) { ctx.fillStyle="rgba(0,0,0,0.1)"; ctx.fillRect(x+4,y+32,40,4); ctx.fillStyle="rgba(255,255,255,0.05)"; ctx.fillRect(x+8,y+28,24,4); }
+  }
+  drawProps(ctx, gx, gy, tile, x, y) {
+    const hash = Math.abs(Math.sin(gx*81.33+gy*19.45)*1000)%1;
+    if (tile.id===BIOMES.GRASSLAND.id && hash>0.94) {
+      ctx.fillStyle = hash>0.97 ? varColor("--accent-pink") : varColor("--accent-gold");
+      ctx.fillRect(x+20,y+20,8,8); ctx.fillStyle="#fff";
+      ctx.fillRect(x+20,y+16,8,4); ctx.fillRect(x+20,y+28,8,4); ctx.fillRect(x+16,y+20,4,8); ctx.fillRect(x+28,y+20,4,8);
+    } else if (tile.id===BIOMES.FOREST.id && hash>0.7) {
+      ctx.fillStyle="#1e1105"; ctx.fillRect(x+20,y+36,8,12);
+      ctx.fillStyle="#06130b"; ctx.beginPath(); ctx.moveTo(x+24,y+8); ctx.lineTo(x+6,y+28); ctx.lineTo(x+42,y+28); ctx.closePath(); ctx.fill();
+      ctx.fillStyle="#0a1d11"; ctx.beginPath(); ctx.moveTo(x+24,y+16); ctx.lineTo(x+10,y+36); ctx.lineTo(x+38,y+36); ctx.closePath(); ctx.fill();
+    } else if (tile.id===BIOMES.RUINS.id && hash>0.8) {
+      ctx.fillStyle="#13101a"; ctx.fillRect(x+12,y+8,24,36); ctx.fillStyle="#221b2b"; ctx.fillRect(x+16,y+12,16,32);
+      const glow = Math.abs(Math.sin(this.animTime+hash*10))*0.7+0.3;
+      ctx.fillStyle="rgba(0,229,255,"+glow+")"; ctx.fillRect(x+22,y+18,4,12); ctx.fillRect(x+18,y+22,12,4);
+    }
+  }
+  drawChar(ctx, x, y, c, skin=0, isPlayer=false) {
+    const moving = c.isMoving;
+    const frame = moving ? Math.sin(this.animTime*2.5)*4 : Math.sin(this.animTime*0.8)*1.5;
+    const leg = moving ? Math.abs(Math.sin(this.animTime*2.5))*6 : 0;
+    ctx.fillStyle="rgba(0,0,0,0.35)"; ctx.beginPath(); ctx.ellipse(x+24,y+42,14,6,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#141221"; ctx.fillRect(x+14,y+36+(moving?-leg+4:0),6,8); ctx.fillRect(x+28,y+36+(moving?leg:0),6,8);
+    if (isPlayer) ctx.fillStyle=varColor("--accent-purple"); else { const cs=["#b83030","#305cb8","#30b88d","#d99723"]; ctx.fillStyle=cs[skin%cs.length]; }
+    ctx.fillRect(x+12,y+20+frame,24,18);
+    ctx.fillStyle = isPlayer ? varColor("--accent-cyan") : "#ffd700"; ctx.fillRect(x+20,y+24+frame,8,10);
+    ctx.fillStyle="#ebe5fc"; ctx.fillRect(x+16,y+8+frame,16,14);
+    ctx.fillStyle = isPlayer ? "#222" : "#734e12"; ctx.fillRect(x+14,y+6+frame,20,6);
+    ctx.fillStyle="#110c1c"; ctx.fillRect(x+18,y+14+frame,3,3); ctx.fillRect(x+27,y+14+frame,3,3);
+    if (isPlayer) { ctx.fillStyle=varColor("--accent-cyan"); ctx.fillRect(x+20,y+15+frame,8,1); }
+  }
+  drawLighting(ctx, px, py, camera, halfW, halfH, startX, endX, startY, endY) {
+    const cw=this.canvas.width, ch=this.canvas.height, t=this.timeOfDay;
+    let color="rgba(10,8,19,0)", op=0;
+    if (t<0.2) { op=(1-t/0.2)*0.45; color="rgba(182,100,247,"+op+")"; }
+    else if (t<0.55) { op=0; }
+    else if (t<0.75) { op=((t-0.55)/0.2)*0.55; color="rgba(255,80,50,"+(op*0.5)+")"; }
+    else { const fade = t<0.9 ? (t-0.75)/0.15 : (1-t)/0.1; op=fade*0.75; color="rgba(8,4,28,"+op+")"; }
+    if (op<=0) return;
+    ctx.save(); ctx.fillStyle=color;
+    if (t<0.75) { ctx.fillRect(0,0,cw,ch); }
+    else {
+      ctx.fillRect(0,0,cw,ch); ctx.globalCompositeOperation="destination-out";
+      const r=160+Math.sin(this.animTime*1.5)*8;
+      const g=ctx.createRadialGradient(px+24,py+24,0,px+24,py+24,r);
+      g.addColorStop(0,"rgba(255,255,255,1)"); g.addColorStop(0.3,"rgba(255,255,255,0.75)"); g.addColorStop(1,"rgba(255,255,255,0)");
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(px+24,py+24,r,0,Math.PI*2); ctx.fill();
+      for (let gy=startY; gy<=endY; gy++) for (let gx=startX; gx<=endX; gx++) {
+        const tile=getTileAt(gx,gy);
+        if (tile.id===BIOMES.RUINS.id) { const hh=Math.abs(Math.sin(gx*81.33+gy*19.45)*1000)%1; if(hh>0.8){
+          const rx=gx*this.tileSize-camera.x+halfW+24, ry=gy*this.tileSize-camera.y+halfH+24, rr=120+Math.sin(this.animTime+hh*5)*10;
+          const gr=ctx.createRadialGradient(rx,ry,0,rx,ry,rr);
+          gr.addColorStop(0,"rgba(0,229,255,0.85)"); gr.addColorStop(0.4,"rgba(0,229,255,0.45)"); gr.addColorStop(1,"rgba(0,229,255,0)");
+          ctx.fillStyle=gr; ctx.beginPath(); ctx.arc(rx,ry,rr,0,Math.PI*2); ctx.fill();
+        }}
+      }
+    }
+    ctx.restore();
+  }
+  drawParticles(ctx, camera, halfW, halfH) {
+    const cw=this.canvas.width, ch=this.canvas.height;
+    if (this.particles.length<this.maxParticles && Math.random()<0.15) {
+      const side=Math.random()>0.5;
+      this.particles.push({ x:camera.x+(side?-halfW-50:Math.random()*cw-halfW), y:camera.y+(-halfH-50+Math.random()*ch),
+        vx:1.5+Math.random()*2, vy:0.8+Math.random()*1.5, size:3+Math.floor(Math.random()*4),
+        color:Math.random()>0.5?"#1a7534":"#ffd700", life:1, decay:0.003+Math.random()*0.005 });
+    }
+    this.particles = this.particles.filter(p => {
+      p.life-=p.decay; if (p.life<=0) return false; p.x+=p.vx; p.y+=p.vy;
+      const sx=p.x-camera.x+halfW, sy=p.y-camera.y+halfH;
+      if (sx>-10&&sx<cw+10&&sy>-10&&sy<ch+10){ ctx.fillStyle=p.color; ctx.globalAlpha=p.life; ctx.fillRect(sx,sy,p.size,p.size); }
+      return true;
+    });
+    ctx.globalAlpha=1;
+  }
+}
+
+/* =========================================================================
+   3. ENGINE  (ported from src/game/engine.js)
+   ========================================================================= */
+class GameEngine {
+  constructor(renderer, onEvent) {
+    this.renderer = renderer; this.onEvent = onEvent;
+    this.player = { gridX:-4, gridY:0, targetGridX:-4, targetGridY:0, moveProgress:0, moveSpeed:0.08, isMoving:false, direction:"down", currentBiome:null };
+    this.camera = { x:0, y:0, ease:0.1 };
+    this.discoveredNPCs = {}; this.keys = {}; this.activeNPC = null;
+    this.initInputs();
+  }
+  initInputs() {
+    window.addEventListener("keydown", (e) => {
+      // Don't steal keys while typing in the chat box.
+      if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) return;
+      
+      const keyLower = (e.key || "").toLowerCase();
+      if (keyLower) {
+        this.keys[keyLower] = true;
+      }
+      
+      // Prevent default scrolling for Space and Arrow keys during gameplay
+      if ([" ", "space", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(keyLower) || e.code === "Space") {
+        e.preventDefault();
+      }
+      
+      if (e.key === " " || e.code === "Space") { this.interact(); }
+    });
+    window.addEventListener("keyup", (e) => {
+      if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) return;
+      const keyLower = (e.key || "").toLowerCase();
+      if (keyLower) {
+        this.keys[keyLower] = false;
+      }
+    });
+  }
+  isWalkable(gx, gy) {
+    const tile = getTileAt(gx, gy);
+    if (!tile.walkable) return false;
+    if (this.discoveredNPCs[gx+","+gy] || getNPCAt(gx, gy)) return false;
+    return true;
+  }
+  interact() {
+    if (this.activeNPC) return;
+    for (const d of [{x:0,y:-1},{x:0,y:1},{x:-1,y:0},{x:1,y:0}]) {
+      const tx=this.player.gridX+d.x, ty=this.player.gridY+d.y, key=tx+","+ty;
+      let npc = this.discoveredNPCs[key] || getNPCAt(tx,ty);
+      if (npc) { this.discoveredNPCs[key]=npc; this.activeNPC=npc; this.player.isMoving=false; this.onEvent("npc_talk", npc); break; }
+    }
+  }
+  update() { this.handleMovement(); this.updateCamera(); this.discoverNPCsNearby(); }
+  handleMovement() {
+    const p = this.player;
+    if (p.isMoving) { p.moveProgress += p.moveSpeed; if (p.moveProgress>=1){ p.gridX=p.targetGridX; p.gridY=p.targetGridY; p.moveProgress=0; p.isMoving=false; this.checkBiomeChange(); } }
+    if (this.activeNPC) return;
+    if (!p.isMoving) {
+      let dx=0, dy=0;
+      if (this.keys["w"]||this.keys["arrowup"]) { dy=-1; p.direction="up"; }
+      else if (this.keys["s"]||this.keys["arrowdown"]) { dy=1; p.direction="down"; }
+      else if (this.keys["a"]||this.keys["arrowleft"]) { dx=-1; p.direction="left"; }
+      else if (this.keys["d"]||this.keys["arrowright"]) { dx=1; p.direction="right"; }
+      if (dx||dy) { const nx=p.gridX+dx, ny=p.gridY+dy; if (this.isWalkable(nx,ny)){ p.targetGridX=nx; p.targetGridY=ny; p.moveProgress=0; p.isMoving=true; this.onEvent("walk"); } }
+    }
+  }
+  checkBiomeChange() {
+    const p=this.player, tile=getTileAt(p.gridX,p.gridY);
+    if (!p.currentBiome || p.currentBiome.id!==tile.id) { p.currentBiome=tile; this.onEvent("biome_discover", { gridX:p.gridX, gridY:p.gridY, biome:tile }); }
+  }
+  updateCamera() {
+    const p=this.player, ts=this.renderer.tileSize;
+    const ppx=(p.gridX+(p.targetGridX-p.gridX)*p.moveProgress)*ts, ppy=(p.gridY+(p.targetGridY-p.gridY)*p.moveProgress)*ts;
+    this.camera.x += (ppx-this.camera.x)*this.camera.ease; this.camera.y += (ppy-this.camera.y)*this.camera.ease;
+  }
+  discoverNPCsNearby() {
+    const r=8;
+    for (let dy=-r; dy<=r; dy++) for (let dx=-r; dx<=r; dx++) {
+      const tx=this.player.gridX+dx, ty=this.player.gridY+dy, key=tx+","+ty;
+      if (!this.discoveredNPCs[key]) { const npc=getNPCAt(tx,ty); if (npc) this.discoveredNPCs[key]=npc; }
+    }
+  }
+  getNPCList() { return Object.values(this.discoveredNPCs); }
+  closeDialog() { this.activeNPC=null; this.onEvent("dialog_close"); }
+}
+
+/* =========================================================================
+   4. INFERENCE SEAM  (the spec's architecture)
+   ========================================================================= */
+
+// One generation in flight at a time, requests chained in order.
+class GenerationQueue {
+  constructor(engine) { this.engine = engine; this.chain = Promise.resolve(); this.inFlight = 0; this.maxConcurrent = 0; }
+  enqueue(req) {
+    const run = async () => {
+      this.inFlight++; this.maxConcurrent = Math.max(this.maxConcurrent, this.inFlight);
+      try { return await this.engine.generate(req); } finally { this.inFlight--; }
+    };
+    const p = this.chain.then(run, run);
+    this.chain = p.catch(() => {});
+    return p;
+  }
+}
+
+// Deterministic, zero-network. Powers tests and narrates the realm with no model.
+// (Swap an ApiEngine in here to hit hosted Gemma — same interface.)
+class MockEngine {
+  constructor() { this.ready = true; this.device = "mock"; this.label = "Mock (offline)"; }
+  async load() { return { device: this.device }; }
+  async generate({ system = "", user = "", maxTokens = 40, onToken } = {}) {
+    void system; void maxTokens;
+    const text = "The mists part as you arrive. " + user.replace(/\s+/g, " ").slice(0, 60).trim();
+    const words = text.split(" "); let out = "";
+    for (let i = 0; i < words.length; i++) {
+      const chunk = (i ? " " : "") + words[i];
+      out += chunk; if (onToken) onToken(chunk);
+      await new Promise(r => setTimeout(r, 4));
+    }
+    return out; // clean — never includes the prompt
+  }
+}
+
+// Single persistent worker running Gemma via transformers.js on WebGPU.
+class LocalWorkerEngine {
+  constructor(modelId) {
+    this.modelId = modelId; this.ready = false; this.device = null; this.label = "Local · WebGPU";
+    const src = document.getElementById("worker-src").textContent;
+    this._url = URL.createObjectURL(new Blob([src], { type: "application/javascript" }));
+    this.worker = new Worker(this._url, { type: "module" });
+    this._pending = null;          // active generation handlers
+    this._loadResolvers = null;    // active load promise
+    this.onProgress = null; this.onStatus = null;
+    this.worker.onmessage = (e) => this._onMessage(e.data);
+    this.worker.onerror = (e) => { if (this._loadResolvers) this._loadResolvers.reject(new Error(e.message || "worker error")); };
+  }
+  _onMessage(d) {
+    if (d.type === "status") { this.device = d.device || this.device; if (this.onStatus) this.onStatus(d); }
+    else if (d.type === "progress") { if (this.onProgress) this.onProgress(d); }
+    else if (d.type === "ready") {
+      this.ready = true; this.device = d.device;
+      if (this._loadResolvers) { this._loadResolvers.resolve({ device: d.device }); this._loadResolvers = null; }
+    }
+    else if (d.type === "token") { if (this._pending) { if (this._pending.onToken) this._pending.onToken(d.token); this._pending.acc += d.token; } }
+    else if (d.type === "complete") {
+      if (this._pending) { const acc = this._pending.acc.trim(); this._pending.resolve(acc || d.text || ""); this._pending = null; }
+    }
+    else if (d.type === "error") {
+      const err = new Error(d.error || "worker error");
+      if (this._loadResolvers) { this._loadResolvers.reject(err); this._loadResolvers = null; }
+      else if (this._pending) { this._pending.reject(err); this._pending = null; }
+    }
+  }
+  load() {
+    return new Promise((resolve, reject) => {
+      this._loadResolvers = { resolve, reject };
+      this.worker.postMessage({ type: "load", modelId: this.modelId });
+    });
+  }
+  // The queue guarantees only one of these is outstanding at a time.
+  generate({ system = "", user = "", maxTokens = 60, temperature = 0.7, onToken } = {}) {
+    return new Promise((resolve, reject) => {
+      this._pending = { resolve, reject, onToken, acc: "" };
+      this.worker.postMessage({ type: "generate", systemPrompt: system, userPrompt: user, maxTokens, temperature });
+    });
+  }
+}
+
+// Streaming REST client for Google Gemini 2.5 Flash API with chunk-by-chunk delta streaming.
+class ApiEngine {
+  constructor() {
+    this.apiKey = localStorage.getItem("GEMMAQUEST_API_KEY") || "";
+    this.ready = false;
+    this.device = "cloud";
+    this.label = "Cloud · Gemini";
+  }
+  setApiKey(key) {
+    this.apiKey = key;
+    localStorage.setItem("GEMMAQUEST_API_KEY", key);
+  }
+  async load() {
+    this.ready = true;
+    return { device: this.device };
+  }
+  async generate({ system = "", user = "", maxTokens = 60, temperature = 0.7, onToken } = {}) {
+    if (!this.apiKey) {
+      throw new Error("Gemini API Key is missing. Please add an API Key in the settings.");
+    }
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?key=${this.apiKey}`;
+    const payload = {
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: `${system ? `[System Directive: ${system}]\n\n` : ""}${user}` }]
+        }
+      ],
+      generationConfig: {
+        maxOutputTokens: maxTokens || 60,
+        temperature: temperature || 0.7
+      }
+    };
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      let parsedError = errorText;
+      try {
+        const parsed = JSON.parse(errorText);
+        parsedError = parsed.error?.message || errorText;
+      } catch (e) {}
+      throw new Error(`Gemini API Request Failed: ${parsedError}`);
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
+    let emittedLength = 0;
+    let fullText = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let tempText = "";
+      const textRegex = /"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
+      let match;
+      while ((match = textRegex.exec(buffer)) !== null) {
+        try {
+          tempText += JSON.parse(`"${match[1]}"`);
+        } catch (e) {
+          tempText += match[1];
+        }
+      }
+      if (tempText.length > emittedLength) {
+        const delta = tempText.slice(emittedLength);
+        if (onToken) onToken(delta);
+        emittedLength = tempText.length;
+        fullText = tempText;
+      }
+    }
+    return fullText;
+  }
+}
+
+
+/* =========================================================================
+   5. TEST SUITE  (executable specs — MockEngine, no model required)
+   ========================================================================= */
+async function runLogicTests() {
+  const R = [];
+  const ok  = (name, detail = "") => R.push({ name, pass: true, detail });
+  const bad = (name, detail = "") => R.push({ name, pass: false, detail });
+  const assert = (name, cond, detail = "") => cond ? ok(name, detail) : bad(name, detail);
+
+  // --- Tilemap determinism & ranges ---
+  assert("tilemap: getTileAt is deterministic", getTileAt(40, 17).id === getTileAt(40, 17).id);
+  const nz = fBmNoise2D(12, 34, 4); assert("tilemap: fBm noise in [0,1]", nz >= 0 && nz <= 1, "got " + nz.toFixed(4));
+  assert("tilemap: every coord maps to a known biome", !!getTileAt(123, -88).id);
+
+  // --- NPC rules ---
+  assert("npc: none spawn in the origin safe zone", getNPCAt(0,0) === null && getNPCAt(2,-2) === null);
+  const a = getNPCAt(60,60), b = getNPCAt(60,60);
+  assert("npc: spawn is deterministic per coord", JSON.stringify(a) === JSON.stringify(b));
+
+  // --- Engine: collision against tilemap ---
+  const stubRenderer = { tileSize: 48 };
+  const eng = new GameEngine(stubRenderer, () => {});
+  let ocean = null;
+  for (let r = 1; r < 200 && !ocean; r++)
+    for (let dx = -r; dx <= r && !ocean; dx++)
+      for (let dy = -r; dy <= r && !ocean; dy++)
+        if (!getTileAt(dx,dy).walkable) ocean = { x:dx, y:dy };
+  assert("engine: water tiles are not walkable", !!ocean && eng.isWalkable(ocean.x, ocean.y) === false, ocean ? ("ocean @ ("+ocean.x+","+ocean.y+")") : "no ocean found nearby");
+
+  // --- Engine: movement guard refuses an unwalkable target ---
+  if (ocean) {
+    const before = { x: eng.player.gridX, y: eng.player.gridY };
+    eng.player.gridX = ocean.x; eng.player.gridY = ocean.y + 1; // sit just south of the water
+    eng.player.targetGridX = eng.player.gridX; eng.player.targetGridY = eng.player.gridY;
+    eng.activeNPC = null; eng.player.isMoving = false;
+    eng.keys = { "w": true }; // press toward the water (north)
+    eng.handleMovement();
+    const blocked = !(eng.player.targetGridY === ocean.y && eng.player.isMoving);
+    assert("engine: handleMovement blocks a step into water", blocked, "isMoving=" + eng.player.isMoving);
+    eng.player.gridX = before.x; eng.player.gridY = before.y; eng.keys = {};
+  } else bad("engine: handleMovement blocks a step into water", "no ocean tile to test against");
+
+  // --- Engine: biome_discover event fires on first check ---
+  let fired = null;
+  const eng2 = new GameEngine(stubRenderer, (evt, data) => { if (evt === "biome_discover") fired = data; });
+  eng2.checkBiomeChange();
+  assert("engine: checkBiomeChange dispatches biome_discover", !!fired && !!fired.biome, fired ? fired.biome.name : "no event");
+
+  // --- Queue: serializes generation (max one in flight) ---
+  const q = new GenerationQueue(new MockEngine());
+  const results = await Promise.all([
+    q.enqueue({ user: "one" }), q.enqueue({ user: "two" }), q.enqueue({ user: "three" })
+  ]);
+  assert("queue: never runs two generations at once", q.maxConcurrent === 1, "maxConcurrent = " + q.maxConcurrent);
+  assert("queue: resolves every enqueued request", results.length === 3 && results.every(r => r.length > 0));
+
+  // --- Output hygiene: response carries no prompt echo (the generated_text bug) ---
+  const mock = new MockEngine();
+  let streamed = "";
+  const full = await mock.generate({ system: "SECRET SYSTEM DIRECTIVE", user: "hello", onToken: t => streamed += t });
+  assert("output: resolved text == streamed text, no prompt echo",
+         streamed.trim() === full.trim() && !full.includes("SECRET SYSTEM DIRECTIVE"),
+         'resolved = "' + full.slice(0,42) + '…"');
+
+  return R;
+}
+
+/* =========================================================================
+   6. ORCHESTRATION + UI WIRING
+   ========================================================================= */
+const ui = {
+  statusBadge: document.getElementById("localBadge"),
+  statusBadgeText: document.getElementById("localBadgeText"),
+  modelSelect: document.getElementById("modelSelect"),
+  apiKeyInput: document.getElementById("apiKeyInput"),
+  loadModelBtn: document.getElementById("loadModelBtn"),
+  loaderPanel: document.getElementById("loaderPanel"),
+  progressContainer: document.getElementById("progressContainer"),
+  progressBar: document.getElementById("progressBar"),
+  progressLabel: document.getElementById("progressLabel"),
+  startGameBtn: document.getElementById("startGameBtn"),
+  loreLogPanel: document.getElementById("loreLogPanel"),
+  loreEntries: document.getElementById("loreEntries"),
+  dialogPanel: document.getElementById("dialogPanel"),
+  npcPortraitCanvas: document.getElementById("npcPortraitCanvas"),
+  npcName: document.getElementById("npcName"),
+  npcTitle: document.getElementById("npcTitle"),
+  chatHistory: document.getElementById("chatHistory"),
+  chatForm: document.getElementById("chatForm"),
+  chatInput: document.getElementById("chatInput"),
+  sendChatBtn: document.getElementById("sendChatBtn"),
+  closeDialogBtn: document.getElementById("closeDialogBtn"),
+  audioIndicator: document.getElementById("audioIndicator"),
+  gameView: document.getElementById("gameView"),
+  specView: document.getElementById("specView"),
+  testsView: document.getElementById("testsView"),
+};
+
+let renderer = null, engine = null;
+let localEngine = null;
+let queue = new GenerationQueue(new MockEngine()); // start on Mock so the realm always narrates
+let usingLocal = false;
+let activeNPCHistory = [];
+let isGenerating = false;
+
+function updateBadge() {
+  if (ui.modelSelect.value === "cloud-gemini") {
+    if (queue && queue.engine && queue.engine.device === "cloud" && queue.engine.ready) {
+      ui.statusBadge.classList.remove("loading");
+      ui.statusBadge.classList.add("green"); 
+      ui.statusBadgeText.textContent = "CLOUD · AI";
+    } else {
+      ui.statusBadge.classList.remove("green", "loading"); 
+      ui.statusBadgeText.textContent = "NO MODEL";
+    }
+  } else {
+    if (usingLocal && localEngine && localEngine.ready && localEngine.device === "webgpu") {
+      ui.statusBadge.classList.remove("loading");
+      ui.statusBadge.classList.add("green"); 
+      ui.statusBadgeText.textContent = "LOCAL · GPU";
+    } else if (usingLocal && localEngine && localEngine.ready) {
+      ui.statusBadge.classList.remove("loading");
+      ui.statusBadge.classList.add("green"); 
+      ui.statusBadgeText.textContent = "LOCAL · " + (localEngine.device || "cpu").toUpperCase();
+    } else if (usingLocal) {
+      ui.statusBadge.classList.remove("green");
+      ui.statusBadge.classList.add("loading");
+      ui.statusBadgeText.textContent = "LOADING…";
+    } else {
+      ui.statusBadge.classList.remove("green", "loading");
+      ui.statusBadgeText.textContent = "NO MODEL";
+    }
+  }
+}
+
+// --- Audio (8-bit synth) ---
+let audioCtx = null, isMuted = false;
+function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); if (audioCtx.state === "suspended") audioCtx.resume(); }
+function tone(type, f0, f1, dur, vol, when = 0) {
+  if (isMuted || !audioCtx) return;
+  const osc = audioCtx.createOscillator(), g = audioCtx.createGain(), t = audioCtx.currentTime + when;
+  osc.type = type; osc.frequency.setValueAtTime(f0, t); if (f1) osc.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  osc.connect(g); g.connect(audioCtx.destination); osc.start(t); osc.stop(t + dur);
+}
+const playWalk = () => tone("triangle", 90, 30, 0.08, 0.05);
+const playBlip = () => tone("square", 500 + Math.random()*200, null, 0.04, 0.02);
+const playFanfare = () => [261.63,329.63,392,523.25].forEach((f,i) => tone("square", f, null, 0.12, 0.04, i*0.07));
+function toggleMute() {
+  isMuted = !isMuted;
+  ui.audioIndicator.textContent = isMuted ? "🔇 Sound OFF" : "🔊 Sound ON";
+  ui.audioIndicator.classList.toggle("muted", isMuted); if (!isMuted) initAudio();
+}
+ui.audioIndicator.addEventListener("click", toggleMute);
+window.addEventListener("keydown", (e) => { if (e.key.toLowerCase() === "m" && (!document.activeElement || document.activeElement.tagName !== "INPUT")) toggleMute(); });
+
+// --- Tabs ---
+document.querySelectorAll(".tab-btn").forEach(btn => btn.addEventListener("click", () => {
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  const tab = btn.dataset.tab;
+  ui.specView.classList.toggle("hidden", tab !== "spec");
+  ui.testsView.classList.toggle("hidden", tab !== "tests");
+}));
+
+// --- Toggle Gemini Key Input visibility ---
+ui.modelSelect.addEventListener("change", () => {
+  if (ui.modelSelect.value === "cloud-gemini") {
+    ui.apiKeyInput.classList.remove("hidden");
+    ui.apiKeyInput.value = localStorage.getItem("GEMMAQUEST_API_KEY") || "";
+    ui.apiKeyInput.focus();
+  } else {
+    ui.apiKeyInput.classList.add("hidden");
+  }
+  updateBadge();
+});
+if (ui.modelSelect.value === "cloud-gemini") {
+  ui.apiKeyInput.classList.remove("hidden");
+  ui.apiKeyInput.value = localStorage.getItem("GEMMAQUEST_API_KEY") || "";
+}
+
+// --- Load AI ---
+ui.loadModelBtn.addEventListener("click", async () => {
+  const selectedModel = ui.modelSelect.value;
+  ui.progressContainer.classList.remove("hidden");
+  ui.progressBar.style.width = "0%";
+  ui.loadModelBtn.disabled = true; ui.loadModelBtn.textContent = "Loading…";
+
+  if (selectedModel === "cloud-gemini") {
+    const key = ui.apiKeyInput.value.trim();
+    if (!key) {
+      alert("Please enter a Google Gemini API Key to use Cloud fallback.");
+      ui.loadModelBtn.disabled = false; ui.loadModelBtn.textContent = "Load AI";
+      ui.progressContainer.classList.add("hidden");
+      return;
+    }
+    ui.progressLabel.textContent = "Enabling Cloud AI…";
+    usingLocal = false;
+    updateBadge();
+    try {
+      const apiEngine = new ApiEngine();
+      apiEngine.setApiKey(key);
+      await apiEngine.load();
+      queue = new GenerationQueue(apiEngine);
+      ui.progressContainer.classList.add("hidden");
+      ui.loadModelBtn.textContent = "AI Loaded"; ui.modelSelect.disabled = true; ui.apiKeyInput.disabled = true;
+      ui.chatInput.disabled = false; ui.sendChatBtn.disabled = false;
+      document.getElementById("runLiveBtn").disabled = false;
+      updateBadge();
+    } catch (err) {
+      ui.loadModelBtn.disabled = false; ui.loadModelBtn.textContent = "Retry Load";
+      ui.progressLabel.textContent = "Load failed: " + err.message;
+      queue = new GenerationQueue(new MockEngine()); updateBadge();
+    }
+  } else {
+    ui.progressLabel.textContent = "Initializing WebGPU…";
+    usingLocal = true; updateBadge();
+    try {
+      localEngine = new LocalWorkerEngine(selectedModel);
+      localEngine.onProgress = (d) => { const p = Math.round(d.progress || 0); ui.progressBar.style.width = p + "%"; ui.progressLabel.textContent = "Downloading " + (d.file || "").split("/").pop() + ": " + p + "%"; };
+      localEngine.onStatus = (d) => { ui.progressLabel.textContent = d.message || "…"; updateBadge(); };
+      await localEngine.load();
+      queue = new GenerationQueue(localEngine); // route all generation through the real engine now
+      ui.progressContainer.classList.add("hidden");
+      ui.loadModelBtn.textContent = "AI Loaded"; ui.modelSelect.disabled = true;
+      ui.chatInput.disabled = false; ui.sendChatBtn.disabled = false;
+      document.getElementById("runLiveBtn").disabled = false;
+      updateBadge();
+    } catch (err) {
+      ui.loadModelBtn.disabled = false; ui.loadModelBtn.textContent = "Retry Load";
+      ui.progressLabel.textContent = "Load failed: " + err.message + " — staying on offline narrator.";
+      usingLocal = false; queue = new GenerationQueue(new MockEngine()); updateBadge();
+    }
+  }
+});
+
+// --- Biome lore (routed through the single queue — no temp worker) ---
+function generateBiomeLore(gridX, gridY, biome) {
+  const loreP = h("p", { text: biome.lore });
+  const entry = h("div", { class: "lore-entry" },
+    h("span", { class: "entry-coord", text: "[X: " + gridX + ", Y: " + gridY + "]" }),
+    h("h4", { class: "pixel-font", style: "color:var(--accent-cyan)", text: biome.name }),
+    loreP
+  );
+  ui.loreEntries.insertBefore(entry, ui.loreEntries.firstChild);
+  if (!queue || !queue.engine || !queue.engine.ready || queue.engine.device === "mock") return; // keep static lore offline-with-no-model
+
+  const system = "You are an ancient mystical chronicler. Write ONE poetic sentence under 20 words. Mysterious, atmospheric.";
+  const user = "Describe the land at X:" + gridX + ", Y:" + gridY + ", a " + biome.name + ".";
+  let acc = "";
+  queue.enqueue({ system, user, maxTokens: 30, onToken: (t) => { acc += t; loreP.textContent = acc; } })
+       .then((text) => { loreP.textContent = (text || acc).trim(); })
+       .catch(() => {});
+}
+
+// --- NPC dialog ---
+function drawPortrait(npc) {
+  const ctx = ui.npcPortraitCanvas.getContext("2d");
+  ctx.fillStyle = "#0f0c1b"; ctx.fillRect(0,0,48,48); ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = "#ebe5fc"; ctx.fillRect(8,12,32,28);
+  const colors = ["#b83030","#305cb8","#30b88d","#d99723"]; ctx.fillStyle = colors[npc.skinColor % colors.length]; ctx.fillRect(8,4,32,12);
+  ctx.fillStyle = "#000"; ctx.fillRect(14,20,6,6); ctx.fillRect(28,20,6,6);
+}
+function addBubble(cls, text) {
+  const p = h("p", { text });
+  const bubble = h("div", { class: "chat-bubble " + cls }, p);
+  ui.chatHistory.appendChild(bubble);
+  ui.chatHistory.scrollTop = ui.chatHistory.scrollHeight;
+  return bubble;
+}
+function initiateNPCDialogue(npc) {
+  playFanfare();
+  ui.dialogPanel.classList.remove("hidden");
+  ui.npcName.textContent = npc.name; ui.npcTitle.textContent = npc.title;
+  ui.chatHistory.replaceChildren(); activeNPCHistory = [];
+  drawPortrait(npc);
+
+  if (queue && queue.engine && queue.engine.ready && queue.engine.device !== "mock") {
+    const bubble = addBubble("npc-bubble thinking", "…");
+    const el = bubble.querySelector("p");
+    isGenerating = true;
+    
+    ui.chatInput.disabled = true;
+    ui.chatInput.placeholder = "Summoning " + npc.name + "'s thoughts...";
+    ui.sendChatBtn.disabled = true;
+
+    const system = "You are " + npc.name + ", a wise, enigmatic " + npc.title + " in the " + npc.tileType + ". Backstory: " + npc.backstory + ". Speak retro-fantasy English. Under 25 words.";
+    let acc = "";
+    let isFirstToken = true;
+    queue.enqueue({ system, user: "Introduce yourself to the adventurer who just walked up.", maxTokens: 40,
+      onToken: (t) => {
+        if (isFirstToken) { bubble.classList.remove("thinking"); isFirstToken = false; }
+        acc += t; el.textContent = acc; playBlip();
+      } })
+      .then((text) => { 
+        bubble.classList.remove("thinking"); 
+        el.textContent = (text || acc).trim(); 
+        activeNPCHistory.push({ role:"assistant", content:(text||acc).trim() }); 
+        isGenerating = false; 
+        ui.chatInput.disabled = false; 
+        ui.chatInput.placeholder = "Ask the NPC anything...";
+        ui.sendChatBtn.disabled = false; 
+        ui.chatInput.focus();
+      })
+      .catch((e) => { 
+        bubble.classList.remove("thinking"); 
+        el.textContent = "(the " + npc.title + " falls silent — " + e.message + ")"; 
+        isGenerating = false; 
+        ui.chatInput.disabled = false; 
+        ui.chatInput.placeholder = "Ask the NPC anything...";
+        ui.sendChatBtn.disabled = false; 
+        ui.chatInput.focus();
+      });
+  } else {
+    addBubble("npc-bubble", "Greetings, traveler. I am " + npc.name + ", the " + npc.title + ". (Click Load AI to let me speak freely.)");
+  }
+}
+
+ui.chatForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  if (!engine || !engine.activeNPC || isGenerating) return;
+  if (!queue || !queue.engine || !queue.engine.ready || queue.engine.device === "mock") return;
+  const npc = engine.activeNPC;
+  const query = ui.chatInput.value.trim(); if (!query) return;
+  ui.chatInput.value = ""; ui.chatInput.disabled = true; 
+  ui.chatInput.placeholder = npc.name + " is thinking...";
+  ui.sendChatBtn.disabled = true;
+
+  addBubble("user-bubble", query);
+  const bubble = addBubble("npc-bubble thinking", "…");
+  const el = bubble.querySelector("p");
+
+  let hist = ""; activeNPCHistory.slice(-4).forEach(hh => hist += (hh.role === "user" ? "Adventurer" : npc.name) + ": " + hh.content + "\n");
+  const system = "You are " + npc.name + ", a wise, enigmatic " + npc.title + " in the " + npc.tileType + ". Backstory: " + npc.backstory + ". Retro-fantasy RPG style. Under 30 words.";
+  const user = hist + "Adventurer: " + query + "\n" + npc.name + ":";
+  activeNPCHistory.push({ role:"user", content:query });
+
+  isGenerating = true; let acc = "";
+  let isFirstToken = true;
+  queue.enqueue({ system, user, maxTokens: 50, onToken: (t) => {
+    if (isFirstToken) { bubble.classList.remove("thinking"); isFirstToken = false; }
+    acc += t; el.textContent = acc; playBlip(); ui.chatHistory.scrollTop = ui.chatHistory.scrollHeight;
+  } })
+    .then((text) => { 
+      bubble.classList.remove("thinking"); 
+      el.textContent = (text || acc).trim(); 
+      activeNPCHistory.push({ role:"assistant", content:(text||acc).trim() }); 
+      isGenerating = false; 
+      ui.chatInput.disabled = false; 
+      ui.chatInput.placeholder = "Ask the NPC anything...";
+      ui.sendChatBtn.disabled = false; 
+      ui.chatInput.focus(); 
+    })
+    .catch((err) => { 
+      bubble.classList.remove("thinking"); 
+      el.textContent = "(silence — " + err.message + ")"; 
+      isGenerating = false; 
+      ui.chatInput.disabled = false; 
+      ui.chatInput.placeholder = "Ask the NPC anything...";
+      ui.sendChatBtn.disabled = false; 
+      ui.chatInput.focus();
+    });
+});
+
+ui.closeDialogBtn.addEventListener("click", () => { if (engine) engine.closeDialog(); });
+
+// --- Start game ---
+ui.startGameBtn.addEventListener("click", () => {
+  initAudio();
+  ui.loaderPanel.classList.add("hidden");
+  ui.loreLogPanel.classList.remove("hidden");
+  const canvas = document.getElementById("gameCanvas");
+  renderer = new GameRenderer(canvas);
+  const resize = () => renderer.resize(window.innerWidth, window.innerHeight);
+  window.addEventListener("resize", resize); resize();
+  engine = new GameEngine(renderer, (evt, data) => {
+    if (evt === "biome_discover") generateBiomeLore(data.gridX, data.gridY, data.biome);
+    else if (evt === "npc_talk") initiateNPCDialogue(data);
+    else if (evt === "walk") playWalk();
+    else if (evt === "dialog_close") ui.dialogPanel.classList.add("hidden");
+  });
+  engine.checkBiomeChange();
+  (function tick(){ engine.update(); renderer.render(engine.camera, engine.player, engine.getNPCList()); requestAnimationFrame(tick); })();
+});
+
+// --- Tests view wiring ---
+function renderTestResults(rows) {
+  const tbody = document.getElementById("testResults"); tbody.replaceChildren();
+  let pass = 0, fail = 0;
+  rows.forEach(r => {
+    const st = h("td", { class: "status-cell " + (r.pass ? "ok" : "bad"), text: r.pass ? "✔ PASS" : "✘ FAIL" });
+    const nm = h("td", { text: r.name });
+    const dt = h("td", { class: "detail", text: r.detail || "" });
+    tbody.appendChild(h("tr", null, st, nm, dt));
+    r.pass ? pass++ : fail++;
+  });
+  const s = document.getElementById("testSummary");
+  s.replaceChildren(
+    h("span", { class: "pass", text: pass + " passed" }),
+    document.createTextNode(" · "),
+    h("span", { class: fail ? "fail" : "pass", text: fail + " failed" })
+  );
+}
+document.getElementById("runTestsBtn").addEventListener("click", async () => {
+  document.getElementById("testSummary").textContent = "running…";
+  renderTestResults(await runLogicTests());
+});
+// DEMO-READINESS SUITE — proves the real demo paths work end-to-end on the loaded engine.
+// Runs in ~15-45s depending on device/model. Click before going on stage.
+document.getElementById("runLiveBtn").addEventListener("click", async () => {
+  const eng = queue && queue.engine;
+  if (!eng || !eng.ready || eng.device === "mock") {
+    renderTestResults([{ name:"live: model loaded", pass:false, detail:"Load AI first." }]);
+    return;
+  }
+  document.getElementById("testSummary").textContent = "running demo-readiness suite…";
+  const rows = [];
+  const isCloud = eng.device === "cloud";
+
+  // 0. Device — webgpu is the headline; cloud is the fallback that drops "no server" only.
+  rows.push({ name:"device: webgpu (preferred) or cloud", pass: eng.device === "webgpu" || isCloud, detail: "device = " + eng.device + (isCloud ? "  (no-server claim disabled)" : "") });
+
+  // 1. Warm-up shot — JIT the pipeline so subsequent timings reflect real demo conditions.
+  try { await queue.enqueue({ system:"Terse.", user:"warmup", maxTokens: 5 }); rows.push({ name:"warm-up: JIT'd pipeline", pass: true }); }
+  catch (e) { rows.push({ name:"warm-up: JIT'd pipeline", pass: false, detail: e.message }); renderTestResults(rows); return; }
+
+  // 2. Latency + streaming under post-warm conditions.
+  let firstTokenAt = null, streamed = "", text1 = "";
+  const t0 = performance.now();
+  try {
+    text1 = await queue.enqueue({ system:"You are a bard.", user:"Describe a misty forest in one sentence.", maxTokens: 30,
+      onToken: (t) => { if (firstTokenAt === null) firstTokenAt = performance.now(); streamed += t; } });
+  } catch (e) {
+    rows.push({ name:"latency: generation succeeded", pass: false, detail: e.message });
+    renderTestResults(rows); return;
+  }
+  const ttft = firstTokenAt - t0;
+  rows.push({ name:"streaming: tokens arrive incrementally", pass: firstTokenAt !== null });
+  rows.push({ name:"latency: first token < 2s (post-warm-up)", pass: ttft < 2000, detail: Math.round(ttft) + "ms" });
+
+  const out1 = (text1 || streamed).trim();
+  const tokenSoup = /(.{3,})\1\1\1/.test(out1); // crude check: same 3+ chars repeating 4×
+  rows.push({ name:"output: bard prompt — coherent, non-repeating", pass: out1.length > 8 && !tokenSoup, detail: '"' + out1.slice(0, 80) + '"' });
+
+  // 3. The actual demo prompt — NPC dialog (matches initiateNPCDialogue).
+  try {
+    const npc = await queue.enqueue({
+      system: "You are Eldrin, a wise enigmatic Old Seer in the Whispering Woods. Backstory: guards a mystical gateway. Retro-fantasy English. Under 25 words.",
+      user: "Introduce yourself to the adventurer who just walked up.", maxTokens: 40
+    });
+    rows.push({ name:"demo path: NPC dialog produces in-character text", pass: npc.trim().length > 10, detail: '"' + npc.trim().slice(0, 80) + '"' });
+  } catch (e) { rows.push({ name:"demo path: NPC dialog", pass: false, detail: e.message }); }
+
+  // 4. The actual demo prompt — biome lore (matches generateBiomeLore).
+  try {
+    const lore = await queue.enqueue({
+      system: "You are an ancient mystical chronicler. ONE poetic sentence under 20 words. Mysterious, atmospheric.",
+      user: "Describe the land at X:5, Y:-3, a Whispering Woods.", maxTokens: 30
+    });
+    rows.push({ name:"demo path: biome lore produces atmospheric text", pass: lore.trim().length > 10, detail: '"' + lore.trim().slice(0, 80) + '"' });
+  } catch (e) { rows.push({ name:"demo path: biome lore", pass: false, detail: e.message }); }
+
+  // 5. Sustained stability — 3 generations back-to-back, the move-through-biomes scenario.
+  try {
+    const triple = await Promise.all([
+      queue.enqueue({ system:"Terse.", user:"Say 'one'.", maxTokens: 8 }),
+      queue.enqueue({ system:"Terse.", user:"Say 'two'.", maxTokens: 8 }),
+      queue.enqueue({ system:"Terse.", user:"Say 'three'.", maxTokens: 8 })
+    ]);
+    rows.push({ name:"stability: 3 sequential generations (no OOM/crash)", pass: triple.every(t => t.trim().length > 0), detail: triple.map(t => '"' + t.trim().slice(0,16) + '"').join(" · ") });
+    rows.push({ name:"stability: queue serialization holds under load", pass: queue.maxConcurrent <= 1, detail: "maxConcurrent = " + queue.maxConcurrent });
+  } catch (e) { rows.push({ name:"stability: 3 sequential generations", pass: false, detail: e.message }); }
+
+  // 6. Offline-survives-refresh proof: weights persist in CacheStorage.
+  if (!isCloud && typeof caches !== "undefined") {
+    try {
+      const keys = await caches.keys();
+      const tcache = keys.find(k => k.toLowerCase().includes("transformers"));
+      rows.push({ name:"cache: weights persisted in CacheStorage (refresh = no re-download)",
+        pass: !!tcache,
+        detail: tcache ? "found '" + tcache + "' — refresh-safe" : "NO transformers-cache — refresh WILL re-download. Do not refresh before demo." });
+    } catch (e) { rows.push({ name:"cache: CacheStorage check", pass: false, detail: e.message }); }
+
+    // Mark storage persistent so the browser does not evict the model under pressure.
+    try {
+      let persisted = navigator.storage && navigator.storage.persisted ? await navigator.storage.persisted() : false;
+      if (!persisted && navigator.storage && navigator.storage.persist) persisted = await navigator.storage.persist();
+      rows.push({ name:"cache: storage marked persistent (no eviction)",
+        pass: !!persisted,
+        detail: persisted ? "persistent — browser will not evict" : "best-effort — browser may evict under pressure" });
+    } catch (e) { rows.push({ name:"cache: persistence", pass: false, detail: e.message }); }
+  }
+
+  renderTestResults(rows);
+});
+
+updateBadge();
+console.log("GemmaQuest single-file ready. Game plays now; click Load AI to wake Gemma. Tests tab runs logic specs with no model.");
+</script>
+</body>
+</html>

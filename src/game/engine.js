@@ -11,9 +11,9 @@ export class GameEngine {
 
     // Player position (Tile aligned)
     this.player = {
-      gridX: 0,
+      gridX: -4,
       gridY: 0,
-      targetGridX: 0,
+      targetGridX: -4,
       targetGridY: 0,
       moveProgress: 0,
       moveSpeed: 0.08, // Smoothness rate per frame
@@ -43,16 +43,29 @@ export class GameEngine {
 
   initInputs() {
     window.addEventListener('keydown', (e) => {
-      this.keys[e.key.toLowerCase()] = true;
+      // Don't steal keys or prevent default behaviors while typing in a text input or textarea
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        return;
+      }
+      
+      const keyLower = e.key.toLowerCase();
+      this.keys[keyLower] = true;
+      
+      // Prevent default scrolling for Space and Arrow keys during gameplay
+      if ([' ', 'space', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(keyLower) || e.code === 'Space') {
+        e.preventDefault();
+      }
       
       // Space to trigger NPC dialogue
       if (e.key === ' ' || e.code === 'Space') {
-        e.preventDefault();
         this.interact();
       }
     });
 
     window.addEventListener('keyup', (e) => {
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        return;
+      }
       this.keys[e.key.toLowerCase()] = false;
     });
   }

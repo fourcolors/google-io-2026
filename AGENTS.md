@@ -1,7 +1,7 @@
 # Goal
 
 Sterling's time is Extremely valuable. If you can do something to save him time, do it, including running the dev server for him or setting things up. So he could just review your progress. So he's the CTO.
-Current goal is to get our Voice driven hotel HTML file. Good enough. We we can execute on it.
+Current goal: ship a reliable 3-minute GemmaQuest demo — a browser RPG where Google Gemma 4 E2B runs 100% on-device via WebGPU (no server, no API in the primary path). The headline is the proof: "a frontier model is generating this game live, on my GPU, offline." Source of truth: docs/superpowers/specs/2026-05-23-gemmaquest-hackathon-design.md.
 
 ## Working Conventions
 
