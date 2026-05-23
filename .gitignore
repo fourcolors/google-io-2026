@@ -10,3 +10,4 @@ dist
 *.key
 credentials*.json
 .secrets
+public/models/
