@@ -383,9 +383,10 @@ function initiateNPCDialogue(npc) {
 
   // introductory dialogue bubble
   const bubble = document.createElement('div');
-  // Add 'thinking' class for premium pulsing until the first token streams!
   bubble.className = 'chat-bubble npc-bubble thinking';
-  bubble.innerHTML = `<p id="npcDialogueText">...</p>`;
+  const textEl = document.createElement('p');
+  textEl.innerText = '...';
+  bubble.appendChild(textEl);
   ui.chatHistory.appendChild(bubble);
 
   // Generate customized greeting from Gemma
@@ -410,12 +411,9 @@ function initiateNPCDialogue(npc) {
         isFirstToken = false;
       }
       accumulatedResponseText += token;
-      const dialogueTextEl = document.getElementById('npcDialogueText');
-      if (dialogueTextEl) {
-        dialogueTextEl.innerText = accumulatedResponseText;
-        ui.chatHistory.scrollTop = ui.chatHistory.scrollHeight;
-        playTextBlip();
-      }
+      textEl.innerText = accumulatedResponseText;
+      ui.chatHistory.scrollTop = ui.chatHistory.scrollHeight;
+      playTextBlip();
     }).then((fullText) => {
       isGenerating = false;
       ui.statusDot.className = 'indicator-dot active';
@@ -435,12 +433,12 @@ function initiateNPCDialogue(npc) {
       ui.chatInput.placeholder = "Ask the NPC anything...";
       ui.sendChatBtn.disabled = false;
       ui.chatInput.focus();
-      document.getElementById('npcDialogueText').innerText = `Greetings, traveler. I am ${npc.name}, the ${npc.title}. I seek relics in this grid.`;
+      textEl.innerText = `Greetings, traveler. I am ${npc.name}, the ${npc.title}. I seek relics in this grid.`;
     });
   } else {
     // Offline / Fallback greeting
     bubble.classList.remove('thinking');
-    document.getElementById('npcDialogueText').innerText = `Greetings, traveler. I am ${npc.name}, the ${npc.title}. I seek relics in this grid at [${npc.gridX}, ${npc.gridY}]. (Enable WebGPU AI to chat freely!)`;
+    textEl.innerText = `Greetings, traveler. I am ${npc.name}, the ${npc.title}. I seek relics in this grid at [${npc.gridX}, ${npc.gridY}]. (Enable WebGPU AI to chat freely!)`;
   }
 }
 
@@ -467,7 +465,9 @@ ui.chatForm.addEventListener('submit', (e) => {
   // Create NPC response bubble (pulsing with thinking glow until loaded)
   const npcBubble = document.createElement('div');
   npcBubble.className = 'chat-bubble npc-bubble thinking';
-  npcBubble.innerHTML = `<p id="npcDialogueText">...</p>`;
+  const textEl = document.createElement('p');
+  textEl.innerText = '...';
+  npcBubble.appendChild(textEl);
   ui.chatHistory.appendChild(npcBubble);
   ui.chatHistory.scrollTop = ui.chatHistory.scrollHeight;
 
@@ -497,12 +497,9 @@ ui.chatForm.addEventListener('submit', (e) => {
       isFirstToken = false;
     }
     accumulatedResponseText += token;
-    const dialogueTextEl = document.getElementById('npcDialogueText');
-    if (dialogueTextEl) {
-      dialogueTextEl.innerText = accumulatedResponseText;
-      ui.chatHistory.scrollTop = ui.chatHistory.scrollHeight;
-      playTextBlip();
-    }
+    textEl.innerText = accumulatedResponseText;
+    ui.chatHistory.scrollTop = ui.chatHistory.scrollHeight;
+    playTextBlip();
   }).then((fullText) => {
     isGenerating = false;
     ui.statusDot.className = 'indicator-dot active';
@@ -523,7 +520,7 @@ ui.chatForm.addEventListener('submit', (e) => {
     ui.chatInput.placeholder = 'Ask the NPC anything...';
     ui.sendChatBtn.disabled = false;
     ui.chatInput.focus();
-    document.getElementById('npcDialogueText').innerText = `Forgive me, my mind wanders. The energies of this place block my thoughts...`;
+    textEl.innerText = `Forgive me, my mind wanders. The energies of this place block my thoughts...`;
   });
 });
 
