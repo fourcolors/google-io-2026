@@ -556,6 +556,8 @@ function drawNPCPortrait(npc) {
 
 // --- Start Game Logic ---
 ui.startGameBtn.addEventListener('click', () => {
+  ui.startGameBtn.blur();
+  document.body.focus();
   initAudio();
   startBackgroundMusic();
   ui.loaderPanel.classList.add('hidden');
