@@ -7,6 +7,16 @@ env.backends.onnx.wasm.proxy = false;
 let pipelineInstance = null;
 let currentModelId = null;
 
+// Surface any silent failure (unhandled rejection, ORT crash, WebGPU shader compile error)
+// to the main thread instead of leaving the badge stuck on LOADING forever.
+self.addEventListener("unhandledrejection", (e) => {
+  const msg = (e && e.reason && (e.reason.message || e.reason.toString())) || "Unhandled worker rejection";
+  self.postMessage({ type: "error", error: "Worker rejection: " + msg });
+});
+self.addEventListener("error", (e) => {
+  self.postMessage({ type: "error", error: "Worker error: " + (e.message || "unknown") });
+});
+
 // Listen for messages from the main thread
 self.onmessage = async (event) => {
   const { type, modelId, systemPrompt, userPrompt, maxTokens, temperature } = event.data;
@@ -23,6 +33,7 @@ self.onmessage = async (event) => {
       // Check for WebGPU support
       const hasWebGPU = typeof navigator !== 'undefined' && !!navigator.gpu;
       const device = hasWebGPU ? 'webgpu' : 'wasm';
+      self.__device = device;
       
       self.postMessage({ 
         type: 'status', 
@@ -54,10 +65,12 @@ self.onmessage = async (event) => {
               message: `Downloading ${data.file.split('/').pop()}...`
             });
           } else if (data.status === 'done') {
+            // Last file finished streaming; ONNX session compile is next and emits no callbacks.
             self.postMessage({
               type: 'status',
-              status: 'done',
-              message: `Finished downloading ${data.file.split('/').pop()}`
+              status: 'compiling',
+              message: `Compiling for ${(self.__device || 'webgpu').toUpperCase()}...`,
+              device: self.__device
             });
           }
         }

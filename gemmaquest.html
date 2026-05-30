@@ -256,7 +256,7 @@
     </div>
 
     <select id="modelSelect" class="model-select">
-      <option value="onnx-community/gemma-4-E2B-it-ONNX" selected>Gemma 4 E2B (Frontier · ~1.5GB)</option>
+      <option value="onnx-community/gemma-3-1b-it-ONNX" selected>Gemma 3 1B (Frontier · ~700MB)</option>
       <option value="onnx-community/gemma-3-270m-it-ONNX">Gemma 3 270M (Fast · ~150MB)</option>
       <option value="cloud-gemini">Google Gemini 2.5 Flash (Cloud Fallback)</option>
     </select>
@@ -407,6 +407,16 @@ env.allowLocalModels = false;
 let pipe = null;
 let currentModelId = null;
 
+// Surface any silent failure (unhandled rejection, ORT crash, WebGPU shader compile error)
+// to the main thread instead of leaving the badge stuck on LOADING forever.
+self.addEventListener("unhandledrejection", (e) => {
+  const msg = (e && e.reason && (e.reason.message || e.reason.toString())) || "Unhandled worker rejection";
+  self.postMessage({ type: "error", error: "Worker rejection: " + msg });
+});
+self.addEventListener("error", (e) => {
+  self.postMessage({ type: "error", error: "Worker error: " + (e.message || "unknown") });
+});
+
 self.onmessage = async (e) => {
   const { type, modelId, systemPrompt, userPrompt, maxTokens, temperature } = e.data;
 
@@ -428,7 +438,10 @@ self.onmessage = async (e) => {
           if (d.status === "downloading" || d.status === "progress") {
             self.postMessage({ type: "progress", file: d.file || "", progress: d.progress || 0 });
           } else if (d.status === "initiate") {
-            self.postMessage({ type: "status", status: "downloading", message: "Fetching " + (d.file||"").split("/").pop() });
+            self.postMessage({ type: "status", status: "downloading", message: "Fetching " + (d.file || "").split("/").pop() });
+          } else if (d.status === "done") {
+            // Last file finished streaming; ONNX session compile is next and emits no callbacks.
+            self.postMessage({ type: "status", status: "compiling", message: "Compiling for " + (self.__device || "webgpu").toUpperCase() + "…", device: self.__device });
           }
         }
       });
